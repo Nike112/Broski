@@ -1,10 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ElevenLabs } from '@elevenlabs/elevenlabs-js';
-
-// Initialize ElevenLabs client
-const elevenlabs = new ElevenLabs({
-  apiKey: process.env.ELEVENLABS_API_KEY,
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,36 +19,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate speech
-    const audioStream = await elevenlabs.generate({
-      voice: voiceId,
-      text: text,
-      model_id: modelId,
-      voice_settings: {
-        stability: 0.5,
-        similarity_boost: 0.5,
-        style: 0.0,
-        use_speaker_boost: true
-      }
+    // Generate speech using direct API call
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': process.env.ELEVENLABS_API_KEY!,
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: modelId,
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.5,
+          style: 0.0,
+          use_speaker_boost: true
+        }
+      })
     });
 
-    // Convert stream to buffer
-    const chunks: Uint8Array[] = [];
-    const reader = audioStream.getReader();
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+    }
+
+    // Get audio buffer
+    const audioBuffer = await response.arrayBuffer();
     
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-
-    const audioBuffer = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
-    let offset = 0;
-    for (const chunk of chunks) {
-      audioBuffer.set(chunk, offset);
-      offset += chunk.length;
-    }
-
     // Return audio as base64
     const base64Audio = Buffer.from(audioBuffer).toString('base64');
     
@@ -84,15 +76,25 @@ export async function GET() {
       );
     }
 
-    const voices = await elevenlabs.voices.getAll();
+    const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+      headers: {
+        'xi-api-key': process.env.ELEVENLABS_API_KEY!,
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch voices: ${response.status}`);
+    }
+
+    const data = await response.json();
     
     return NextResponse.json({
       success: true,
-      voices: voices.voices.map(voice => ({
+      voices: data.voices.map((voice: any) => ({
         id: voice.voice_id,
         name: voice.name,
-        category: voice.category,
-        description: voice.description,
+        category: voice.category || 'general',
+        description: voice.description || '',
         preview_url: voice.preview_url
       }))
     });

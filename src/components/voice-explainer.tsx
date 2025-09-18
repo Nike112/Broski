@@ -122,9 +122,16 @@ export function VoiceExplainer({ forecastData, mlPredictions, className }: Voice
         audio.onplay = () => setIsPlaying(true);
         audio.onpause = () => setIsPlaying(false);
         
+        audio.onerror = (e) => {
+          console.error('Audio playback error:', e);
+          setError('Audio playback failed. Please try again.');
+          setIsPlaying(false);
+        };
+        
         setCurrentAudio(audio);
         await audio.play();
       } else {
+        console.error('API Error:', result);
         setError(result.error || 'Failed to generate speech');
       }
     } catch (error) {
