@@ -17,21 +17,26 @@ export async function POST(request: NextRequest) {
 
     console.log('Chat API - Processing message:', message);
     
-    // Use the existing financial forecasting flow for AI responses
-    const result = await automateFinancialForecasting({
-      query: message,
-      financialFormulas: JSON.stringify(financialFormulas)
-    });
+    let result;
+    
+    try {
+      // Use the existing financial forecasting flow for AI responses
+      result = await automateFinancialForecasting({
+        query: message,
+        financialFormulas: JSON.stringify(financialFormulas)
+      });
 
-    console.log('Chat API - Result:', result);
+      console.log('Chat API - Result:', result);
 
-    // Check if result is valid
-    if (!result || !result.explanation) {
-      console.error('Chat API - Invalid result:', result);
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to get a valid response from the AI system'
-      }, { status: 500 });
+      // Check if result is valid
+      if (!result || !result.explanation || result.explanation.includes('Sorry, I had trouble processing')) {
+        console.log('Chat API - AI flow failed, using fallback');
+        throw new Error('AI flow failed');
+      }
+    } catch (aiError) {
+      console.log('Chat API - AI flow error, using fallback:', aiError);
+      // Use fallback response system
+      result = getFallbackResponse(message);
     }
 
     // Format response for voice chat
@@ -95,6 +100,36 @@ export async function POST(request: NextRequest) {
       dataType: '',
       forecastData: null
     });
+  }
+}
+
+function getFallbackResponse(message: string) {
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('mrr') || lowerMessage.includes('revenue')) {
+    return {
+      responseType: 'answer',
+      explanation: "I'd be happy to help you with MRR and revenue information. To provide accurate data, I need to generate a financial forecast first. Could you ask me to 'generate a financial forecast' or provide more specific details about your business?",
+      forecast: ''
+    };
+  } else if (lowerMessage.includes('customer') || lowerMessage.includes('trend')) {
+    return {
+      responseType: 'answer',
+      explanation: "I can help you analyze customer trends and growth patterns. To give you detailed insights, I'll need to create a forecast with your business data. Try asking me to 'generate a financial forecast' or 'show customer growth trends'.",
+      forecast: ''
+    };
+  } else if (lowerMessage.includes('forecast') || lowerMessage.includes('prediction')) {
+    return {
+      responseType: 'forecast',
+      explanation: "I can generate comprehensive financial forecasts for your business. Please ask me to 'generate a financial forecast' and I'll create detailed projections for revenue, customers, and key metrics.",
+      forecast: ''
+    };
+  } else {
+    return {
+      responseType: 'answer',
+      explanation: "I'm here to help with financial forecasting and business analysis. You can ask me to generate forecasts, analyze trends, or explain business metrics. What specific financial information would you like to know about?",
+      forecast: ''
+    };
   }
 }
 
