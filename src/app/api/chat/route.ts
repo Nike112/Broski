@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { automateFinancialForecasting } from '@/ai/flows/automate-financial-forecasting';
 import financialFormulas from '@/lib/financial-formulas.json';
 import { getFinancialForecast } from '@/app/actions';
+import { getServerSession } from 'next-auth';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, context = 'chat' } = body;
+    const { message, context = 'chat', businessData } = body;
 
     if (!message) {
       return NextResponse.json(
@@ -20,9 +21,15 @@ export async function POST(request: NextRequest) {
     let result;
     
     try {
+      // Enhance the query with business data context
+      let enhancedQuery = message;
+      if (businessData) {
+        enhancedQuery = `${message}\n\nCurrent Business Data:\n${JSON.stringify(businessData, null, 2)}`;
+      }
+      
       // Use the existing financial forecasting flow for AI responses
       result = await automateFinancialForecasting({
-        query: message,
+        query: enhancedQuery,
         financialFormulas: JSON.stringify(financialFormulas)
       });
 
@@ -35,8 +42,8 @@ export async function POST(request: NextRequest) {
       }
     } catch (aiError) {
       console.log('Chat API - AI flow error, using fallback:', aiError);
-      // Use fallback response system
-      result = getFallbackResponse(message);
+      // Use fallback response system with business data
+      result = getFallbackResponse(message, businessData);
     }
 
     // Format response for voice chat
@@ -77,19 +84,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Chat API error:', error);
     
-    // Provide a fallback response based on the message content
-    let fallbackResponse = '';
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('mrr') || lowerMessage.includes('revenue')) {
-      fallbackResponse = "I'd be happy to help you with MRR and revenue information. To provide accurate data, I need to generate a financial forecast first. Could you ask me to 'generate a financial forecast' or provide more specific details about your business?";
-    } else if (lowerMessage.includes('customer') || lowerMessage.includes('trend')) {
-      fallbackResponse = "I can help you analyze customer trends and growth patterns. To give you detailed insights, I'll need to create a forecast with your business data. Try asking me to 'generate a financial forecast' or 'show customer growth trends'.";
-    } else if (lowerMessage.includes('forecast') || lowerMessage.includes('prediction')) {
-      fallbackResponse = "I can generate comprehensive financial forecasts for your business. Please ask me to 'generate a financial forecast' and I'll create detailed projections for revenue, customers, and key metrics.";
-    } else {
-      fallbackResponse = "I'm here to help with financial forecasting and business analysis. You can ask me to generate forecasts, analyze trends, or explain business metrics. What specific financial information would you like to know about?";
-    }
+    // Use the enhanced fallback response system
+    const fallbackResult = getFallbackResponse(message, businessData);
+    const fallbackResponse = fallbackResult.explanation;
     
     return NextResponse.json({
       success: true,
@@ -103,21 +100,49 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function getFallbackResponse(message: string) {
+function getFallbackResponse(message: string, businessData?: any) {
   const lowerMessage = message.toLowerCase();
   
   if (lowerMessage.includes('mrr') || lowerMessage.includes('revenue')) {
-    return {
-      responseType: 'answer',
-      explanation: "I'd be happy to help you with MRR and revenue information. To provide accurate data, I need to generate a financial forecast first. Could you ask me to 'generate a financial forecast' or provide more specific details about your business?",
-      forecast: ''
-    };
+    if (businessData) {
+      // Calculate actual MRR from business data
+      const largeCustomers = businessData.largeCustomers || 0;
+      const revPerLargeCustomer = businessData.revPerLargeCustomer || 16500;
+      const smallMediumCustomers = businessData.smallMediumCustomers || 0;
+      const revPerSmallMediumCustomer = businessData.revPerSmallMediumCustomer || 3000;
+      
+      const mrr = (largeCustomers * revPerLargeCustomer) + (smallMediumCustomers * revPerSmallMediumCustomer);
+      
+      return {
+        responseType: 'answer',
+        explanation: `Your current MRR is $${mrr.toLocaleString()}. This is calculated from ${largeCustomers} large customers at $${revPerLargeCustomer.toLocaleString()} each and ${smallMediumCustomers} small/medium customers at $${revPerSmallMediumCustomer.toLocaleString()} each.`,
+        forecast: ''
+      };
+    } else {
+      return {
+        responseType: 'answer',
+        explanation: "I'd be happy to help you with MRR and revenue information. To provide accurate data, I need to generate a financial forecast first. Could you ask me to 'generate a financial forecast' or provide more specific details about your business?",
+        forecast: ''
+      };
+    }
   } else if (lowerMessage.includes('customer') || lowerMessage.includes('trend')) {
-    return {
-      responseType: 'answer',
-      explanation: "I can help you analyze customer trends and growth patterns. To give you detailed insights, I'll need to create a forecast with your business data. Try asking me to 'generate a financial forecast' or 'show customer growth trends'.",
-      forecast: ''
-    };
+    if (businessData) {
+      const largeCustomers = businessData.largeCustomers || 0;
+      const smallMediumCustomers = businessData.smallMediumCustomers || 0;
+      const totalCustomers = largeCustomers + smallMediumCustomers;
+      
+      return {
+        responseType: 'answer',
+        explanation: `You currently have ${totalCustomers} total customers: ${largeCustomers} large customers and ${smallMediumCustomers} small/medium customers. To see detailed trends and projections, please ask me to 'generate a financial forecast' or navigate to the Forecast tab.`,
+        forecast: ''
+      };
+    } else {
+      return {
+        responseType: 'answer',
+        explanation: "I can help you analyze customer trends and growth patterns. To give you detailed insights, I'll need to create a forecast with your business data. Try asking me to 'generate a financial forecast' or 'show customer growth trends'.",
+        forecast: ''
+      };
+    }
   } else if (lowerMessage.includes('forecast') || lowerMessage.includes('prediction')) {
     return {
       responseType: 'forecast',

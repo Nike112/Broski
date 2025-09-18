@@ -17,6 +17,7 @@ import {
   Settings
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFinancialStore } from '@/lib/store';
 
 interface VoiceChatProps {
   onMessage?: (message: string) => void;
@@ -40,6 +41,8 @@ interface ConversationState {
 }
 
 export function VoiceChat({ onMessage, onForecastGenerated, className }: VoiceChatProps) {
+  const { inputs } = useFinancialStore();
+  
   const [state, setState] = useState<ConversationState>({
     isCallActive: false,
     isListening: false,
@@ -205,7 +208,8 @@ export function VoiceChat({ onMessage, onForecastGenerated, className }: VoiceCh
         },
         body: JSON.stringify({
           message: message,
-          context: 'voice_chat'
+          context: 'voice_chat',
+          businessData: inputs
         })
       });
 
