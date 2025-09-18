@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
-import { Send, User, Bot, Loader2, PieChart, Trash2, FileSpreadsheet } from 'lucide-react';
+import { Send, User, Bot, Loader2, PieChart, Trash2, FileSpreadsheet, Phone } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,10 +19,11 @@ import { MLPredictor, PredictionResult } from '@/lib/ml-predictor';
 type ChatInterfaceProps = {
   onForecastGenerated: (data: AutomateFinancialForecastingOutput) => void;
   onMlPredictionsGenerated?: (predictions: PredictionResult[]) => void;
+  onSwitchToVoice?: () => void;
 };
 
 
-export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated }: ChatInterfaceProps) {
+export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated, onSwitchToVoice }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [isPending, startTransition] = useTransition();
   const [parsedData, setParsedData] = useState<ParsedExcelData | null>(null);
@@ -224,6 +225,19 @@ export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated }:
             </div>
           </ScrollArea>
           <div className="p-4 bg-card border-t">
+            <div className="flex gap-2 mb-2">
+              {onSwitchToVoice && (
+                <Button
+                  onClick={onSwitchToVoice}
+                  variant="outline"
+                  size="sm"
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  Voice Chat
+                </Button>
+              )}
+            </div>
             <form onSubmit={handleSubmit} className="relative">
               <Textarea
                 value={input}

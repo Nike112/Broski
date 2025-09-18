@@ -1,17 +1,18 @@
 'use client';
 import { useState } from 'react';
-import { Bot, LineChart, PieChart, Activity, Settings } from 'lucide-react';
+import { Bot, LineChart, PieChart, Activity, Settings, Phone } from 'lucide-react';
 import { ChatInterface } from '@/components/chat-interface';
 import { Dashboard } from '@/components/dashboard';
 import { ForecastView } from '@/components/forecast-view';
 import { RealtimeDashboard } from '@/components/realtime-dashboard';
 import { DataSourcesConfig } from '@/components/data-sources-config';
+import { VoiceChat } from '@/components/voice-chat';
 import { Button } from '@/components/ui/button';
 import { useFinancialStore } from '@/lib/store';
 import { AutomateFinancialForecastingOutput } from '@/ai/flows/automate-financial-forecasting';
 import { PredictionResult } from '@/lib/ml-predictor';
 
-export type View = 'dashboard' | 'chatbot' | 'forecast' | 'realtime' | 'sources';
+export type View = 'dashboard' | 'chatbot' | 'forecast' | 'realtime' | 'sources' | 'voice-chat';
 
 export default function Home() {
   const [view, setView] = useState<View>('dashboard');
@@ -76,6 +77,16 @@ export default function Home() {
             <Bot className="w-4 h-4 mr-2" />
             EVE
           </Button>
+          <Button
+            variant={view === 'voice-chat' ? 'secondary' : 'ghost'}
+            onClick={() => handleViewChange('voice-chat')}
+            size="sm"
+            disabled={!hasBeenSaved}
+            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+          >
+            <Phone className="w-4 h-4 mr-2" />
+            Call EVE
+          </Button>
            <Button
             variant={view === 'forecast' ? 'secondary' : 'ghost'}
             onClick={() => handleViewChange('forecast')}
@@ -91,7 +102,8 @@ export default function Home() {
         {view === 'dashboard' && <Dashboard onProceedToChat={() => handleViewChange('chatbot')} />}
         {view === 'realtime' && <RealtimeDashboard />}
         {view === 'sources' && <DataSourcesConfig />}
-        {view === 'chatbot' && <ChatInterface onForecastGenerated={handleForecastGenerated} onMlPredictionsGenerated={handleMlPredictionsGenerated} />}
+        {view === 'chatbot' && <ChatInterface onForecastGenerated={handleForecastGenerated} onMlPredictionsGenerated={handleMlPredictionsGenerated} onSwitchToVoice={() => handleViewChange('voice-chat')} />}
+        {view === 'voice-chat' && <VoiceChat />}
         {view === 'forecast' && forecastData && <ForecastView data={forecastData} mlPredictions={mlPredictions} />}
       </main>
     </div>
