@@ -1,0 +1,157 @@
+{
+  "business_units": {
+    "large_customers": {
+      "go_to_market_strategy": "Sales-Led",
+      "revenue_model": {
+        "license_fee_per_customer": 16500,
+        "arpu_per_month": 16500
+      },
+      "acquisition_assumptions": {
+        "sales_executives_added_per_month": 1,
+        "sales_conversion_per_exec_per_month": 1.5,
+        "average_sales_cycle_in_months": 3,
+        "sales_ramp_up_period_in_months": 3
+      },
+      "customer_dynamics": {
+        "churn_rate_per_year": 0.10,
+        "gross_margin_rate": 0.70
+      }
+    },
+    "small_medium_customers": {
+      "go_to_market_strategy": "Marketing-Led",
+      "revenue_model": {
+        "average_revenue_per_customer": 3000,
+        "arpu_per_month": 3000
+      },
+      "acquisition_assumptions": {
+        "average_marketing_cost": 5000,
+        "customer_acquisition_cost": 1500,
+        "conversion_rate_demo_to_customer": 0.45
+      },
+      "customer_dynamics": {
+        "churn_rate_per_month": 0.02,
+        "gross_margin_rate": 0.70
+      }
+    }
+  },
+  "formulas": {
+    "financial_metrics": {
+      "mrr": {
+        "name": "Monthly Recurring Revenue",
+        "description": "Total predictable recurring income from all paying customers per month.",
+        "formula": "# of paying customers * ARPU per month",
+        "keywords": ["mrr", "monthly recurring revenue", "monthly revenue", "recurring revenue", "monthly income"],
+        "calculation": "large_customers * large_arpu + small_customers * small_arpu"
+      },
+      "arr": {
+        "name": "Annual Recurring Revenue",
+        "description": "Annualized version of MRR.",
+        "formula": "MRR * 12",
+        "keywords": ["arr", "annual recurring revenue", "annual revenue", "yearly revenue"],
+        "calculation": "mrr * 12"
+      },
+      "arpu": {
+        "name": "Average Revenue Per User",
+        "description": "Average monthly revenue generated per active customer.",
+        "formula": "Total Revenue in Period / Number of Active Customers in Period",
+        "keywords": ["arpu", "average revenue per user", "revenue per customer", "per customer revenue"],
+        "calculation": "total_revenue / total_customers"
+      },
+      "gross_margin": {
+        "name": "Gross Margin",
+        "description": "The percentage of revenue remaining after subtracting direct costs (Cost of Sales).",
+        "formula": "(Revenue - Cost of Sales) / Revenue",
+        "keywords": ["gross margin", "margin", "profit margin", "gross profit"],
+        "calculation": "(revenue - cost_of_sales) / revenue"
+      },
+      "revenue_churn_rate": {
+        "name": "Revenue Churn Rate",
+        "description": "The percentage of lost MRR over a specified period.",
+        "formula": "(Lost MRR During Period / Starting MRR) * 100%",
+        "keywords": ["revenue churn", "revenue churn rate", "mrr churn", "revenue loss"],
+        "calculation": "(lost_mrr / starting_mrr) * 100"
+      },
+      "customer_churn_rate": {
+        "name": "Customer Churn Rate",
+        "description": "The percentage of lost customers over a specified period.",
+        "formula": "(# of Lost Customers / # of Customers at Start of Period) * 100%",
+        "keywords": ["customer churn", "churn rate", "customer loss", "attrition rate"],
+        "calculation": "(lost_customers / starting_customers) * 100"
+      },
+      "net_revenue_retention_nrr": {
+        "name": "Net Revenue Retention",
+        "description": "Measures recurring revenue retained from existing customers, including expansions, contractions, and churn.",
+        "formula": "((Starting MRR + Expansion MRR - Churned MRR - Contraction MRR) / Starting MRR) * 100%",
+        "keywords": ["nrr", "net revenue retention", "revenue retention", "customer retention"],
+        "calculation": "((starting_mrr + expansion_mrr - churned_mrr - contraction_mrr) / starting_mrr) * 100"
+      },
+      "customer_lifetime_value_ltv": {
+        "name": "Customer Lifetime Value",
+        "description": "Total projected profit a customer will generate throughout their relationship.",
+        "formula": "(ARPU * Gross Margin) / Churn Rate",
+        "keywords": ["ltv", "lifetime value", "customer lifetime value", "clv", "customer value"],
+        "calculation": "(arpu * gross_margin) / churn_rate"
+      },
+      "customer_acquisition_cost_cac": {
+        "name": "Customer Acquisition Cost",
+        "description": "Total cost to acquire a new, paying customer.",
+        "formula": "Total Sales & Marketing Expenses / # of New Customers Acquired",
+        "keywords": ["cac", "customer acquisition cost", "acquisition cost", "cost to acquire"],
+        "calculation": "total_sales_marketing_expenses / new_customers_acquired"
+      },
+      "ltv_cac_ratio": {
+        "name": "LTV to CAC Ratio",
+        "description": "The relationship between the lifetime value of a customer and the cost to acquire them.",
+        "formula": "LTV / CAC",
+        "keywords": ["ltv cac ratio", "ltv/cac", "lifetime value to acquisition cost", "value to cost ratio"],
+        "calculation": "ltv / cac"
+      },
+      "cac_payback_period": {
+        "name": "CAC Payback Period",
+        "description": "Number of months to recoup customer acquisition costs through gross profit.",
+        "formula": "CAC / (ARPU * Gross Margin)",
+        "keywords": ["cac payback", "payback period", "acquisition payback", "cost recovery"],
+        "calculation": "cac / (arpu * gross_margin)"
+      },
+      "operating_expenses": {
+        "name": "Operating Expenses",
+        "description": "Day-to-day costs of running the business, separate from Cost of Sales.",
+        "formula": "Sum of all non-COGS expenses (R&D, Sales & Marketing, G&A)",
+        "keywords": ["operating expenses", "opex", "operating costs", "business expenses"],
+        "calculation": "rd_expenses + sales_marketing_expenses + ga_expenses"
+      }
+    }
+  },
+  "financial_rules_and_assumptions": {
+    "general": {
+      "saas_quick_ratio_benchmark_for_healthy_growth": "> 4",
+      "rule_of_40_for_healthy_growth": "Combined growth rate + profit margin > 40%",
+      "gross_margin_benchmark": "60% to 80%",
+      "good_ltv_cac_ratio": ">= 3:1",
+      "flag_high_ltv_cac_ratio_for_review": "> 5:1",
+      "healthy_cac_payback_period": "< 12 months"
+    },
+    "large_customers_specific": {
+      "cost_to_acquire": "Sales salaries and commissions are the primary drivers",
+      "sales_ramp_up_effect": "Newly hired sales executives will not be fully productive for 3-6 months. The financial model must account for this lag."
+    },
+    "small_medium_customers_specific": {
+      "cost_to_acquire": "Digital ad spend and marketing costs are the primary drivers",
+      "model_type": "Volume-driven, scalable funnel"
+    }
+  },
+  "formula_keywords": {
+    "mrr": ["mrr", "monthly recurring revenue", "monthly revenue", "recurring revenue", "monthly income", "monthly subscription"],
+    "arr": ["arr", "annual recurring revenue", "annual revenue", "yearly revenue", "annual subscription"],
+    "arpu": ["arpu", "average revenue per user", "revenue per customer", "per customer revenue", "average revenue"],
+    "gross_margin": ["gross margin", "margin", "profit margin", "gross profit", "profitability"],
+    "revenue_churn_rate": ["revenue churn", "revenue churn rate", "mrr churn", "revenue loss", "revenue attrition"],
+    "customer_churn_rate": ["customer churn", "churn rate", "customer loss", "attrition rate", "customer attrition"],
+    "net_revenue_retention_nrr": ["nrr", "net revenue retention", "revenue retention", "customer retention", "retention rate"],
+    "customer_lifetime_value_ltv": ["ltv", "lifetime value", "customer lifetime value", "clv", "customer value", "lifetime revenue"],
+    "customer_acquisition_cost_cac": ["cac", "customer acquisition cost", "acquisition cost", "cost to acquire", "acquisition expense"],
+    "ltv_cac_ratio": ["ltv cac ratio", "ltv/cac", "lifetime value to acquisition cost", "value to cost ratio", "ltv cac"],
+    "cac_payback_period": ["cac payback", "payback period", "acquisition payback", "cost recovery", "payback time"],
+    "operating_expenses": ["operating expenses", "opex", "operating costs", "business expenses", "operational costs"]
+  }
+}

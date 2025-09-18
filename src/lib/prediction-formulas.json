@@ -1,0 +1,169 @@
+{
+  "RevenueForecasting": [
+    {
+      "name": "Expected Revenue",
+      "description": "A top-down method that forecasts revenue based on expected customer growth and average revenue per customer.",
+      "variables": ["ExpectedCustomers", "AverageRevenuePerCustomer"],
+      "calculation": "ExpectedCustomers * AverageRevenuePerCustomer",
+      "citations": [1],
+      "keywords": ["expected revenue", "revenue forecast", "top-down revenue", "customer-based revenue"]
+    },
+    {
+      "name": "Sales Pipeline Analysis",
+      "description": "A bottom-up method that forecasts revenue based on the deals in your sales pipeline.",
+      "variables": ["OpportunityValue", "WinProbability"],
+      "calculation": "SUM(OpportunityValue * WinProbability)",
+      "citations": [1, 2],
+      "keywords": ["pipeline revenue", "sales pipeline", "bottom-up revenue", "deal pipeline", "opportunity value"]
+    },
+    {
+      "name": "Historical Growth",
+      "description": "A simple historical formula that uses a growth rate to forecast future revenue.",
+      "variables": ["PreviousPeriodRevenue", "GrowthRate"],
+      "calculation": "PreviousPeriodRevenue * (1 + GrowthRate)",
+      "citations": [1],
+      "keywords": ["historical growth", "growth rate", "previous revenue", "trend-based revenue"]
+    },
+    {
+      "name": "Simple Trending (Linear Regression)",
+      "description": "Models a linear trend in data over time.",
+      "variables": ["slope", "time_period", "intercept"],
+      "calculation": "m * t + b",
+      "citations": [3],
+      "keywords": ["linear regression", "trending", "linear trend", "regression analysis"]
+    }
+  ],
+  "CustomerGrowthMetrics": [
+    {
+      "name": "Customer Growth Rate",
+      "description": "Measures the percentage change in customer count over a period.",
+      "variables": ["CurrentCustomers", "PreviousCustomers"],
+      "calculation": "((CurrentCustomers - PreviousCustomers) / PreviousCustomers) * 100",
+      "citations": [4],
+      "keywords": ["customer growth", "growth rate", "customer increase", "customer expansion"]
+    },
+    {
+      "name": "Customer Acquisition Cost (CAC)",
+      "description": "Determines the total cost of acquiring a single new customer.",
+      "variables": ["TotalSalesAndMarketingSpend", "NumberOfNewCustomers"],
+      "calculation": "TotalSalesAndMarketingSpend / NumberOfNewCustomers",
+      "citations": [5, 6],
+      "keywords": ["cac", "customer acquisition cost", "acquisition cost", "cost per customer"]
+    },
+    {
+      "name": "Churn Rate",
+      "description": "Measures the percentage of customers who stop using a service.",
+      "variables": ["CustomersLost", "TotalCustomersAtBeginning"],
+      "calculation": "(CustomersLost / TotalCustomersAtBeginning) * 100",
+      "citations": [4],
+      "keywords": ["churn rate", "customer churn", "attrition rate", "customer loss"]
+    },
+    {
+      "name": "Customer Lifetime Value (LTV)",
+      "description": "Projects the total revenue from a single customer over their relationship.",
+      "variables": ["AverageRevenuePerAccount", "ChurnRate"],
+      "calculation": "AverageRevenuePerAccount / ChurnRate",
+      "citations": [4],
+      "keywords": ["ltv", "lifetime value", "customer lifetime value", "clv"]
+    }
+  ],
+  "AccuracyMetrics": [
+    {
+      "name": "Mean Absolute Percentage Error (MAPE)",
+      "description": "Shows the typical miss as a percentage, making it easy to compare across different scales.",
+      "variables": ["Actual", "Forecast", "n"],
+      "calculation": "(100 / n) * SUM(|Actual - Forecast| / Actual)",
+      "citations": [7],
+      "keywords": ["mape", "mean absolute percentage error", "accuracy", "prediction accuracy"]
+    },
+    {
+      "name": "Mean Absolute Error (MAE)",
+      "description": "Shows the typical miss in dollar value, which is easy to interpret.",
+      "variables": ["Actual", "Forecast", "n"],
+      "calculation": "(1 / n) * SUM(|Actual - Forecast|)",
+      "citations": [8],
+      "keywords": ["mae", "mean absolute error", "average error", "prediction error"]
+    },
+    {
+      "name": "Root Mean Squared Error (RMSE)",
+      "description": "Penalizes larger misses more harshly, making it sensitive to outliers.",
+      "variables": ["Actual", "Forecast", "n"],
+      "calculation": "SQRT(SUM((Actual - Forecast)^2) / n)",
+      "citations": [9],
+      "keywords": ["rmse", "root mean squared error", "squared error", "prediction variance"]
+    },
+    {
+      "name": "Bias",
+      "description": "Averages the difference between predicted and actual revenue to reveal a consistent over- or underestimation.",
+      "variables": ["Actual", "Forecast", "n"],
+      "calculation": "(1 / n) * SUM(Forecast - Actual)",
+      "citations": [10],
+      "keywords": ["bias", "prediction bias", "systematic error", "overestimation", "underestimation"]
+    }
+  ],
+  "PredictionMethods": {
+    "revenue_forecasting": {
+      "top_down": {
+        "method": "Expected Revenue",
+        "description": "Start with total addressable market and work down to your share",
+        "best_for": "Strategic planning, market sizing",
+        "accuracy": "Medium",
+        "data_requirements": ["Market size", "Market share", "Customer segments"]
+      },
+      "bottom_up": {
+        "method": "Sales Pipeline Analysis",
+        "description": "Build forecast from individual deals and opportunities",
+        "best_for": "Short-term forecasting, sales planning",
+        "accuracy": "High (short-term)",
+        "data_requirements": ["Pipeline data", "Win rates", "Sales cycle length"]
+      },
+      "historical": {
+        "method": "Historical Growth",
+        "description": "Extrapolate from past performance trends",
+        "best_for": "Stable businesses, trend analysis",
+        "accuracy": "Medium",
+        "data_requirements": ["Historical revenue", "Growth rates", "Seasonality patterns"]
+      },
+      "regression": {
+        "method": "Linear Regression",
+        "description": "Statistical model based on historical data trends",
+        "best_for": "Data-driven forecasting, trend analysis",
+        "accuracy": "High (with good data)",
+        "data_requirements": ["Historical data", "Time series", "External factors"]
+      }
+    },
+    "customer_growth": {
+      "acquisition_based": {
+        "method": "Customer Acquisition Rate",
+        "description": "Forecast based on acquisition channels and conversion rates",
+        "best_for": "Growth planning, marketing optimization",
+        "accuracy": "High",
+        "data_requirements": ["Acquisition channels", "Conversion rates", "Marketing spend"]
+      },
+      "retention_based": {
+        "method": "Net Customer Growth",
+        "description": "Account for both acquisition and churn",
+        "best_for": "Customer lifecycle analysis",
+        "accuracy": "High",
+        "data_requirements": ["Acquisition rate", "Churn rate", "Customer segments"]
+      }
+    }
+  },
+  "DataRequirements": {
+    "historical_data": {
+      "revenue": ["Monthly revenue", "Quarterly revenue", "Annual revenue"],
+      "customers": ["Customer count", "New customers", "Churned customers"],
+      "metrics": ["ARPU", "CAC", "LTV", "Churn rate", "Growth rate"]
+    },
+    "current_data": {
+      "business_model": ["Customer segments", "Pricing", "Revenue streams"],
+      "operations": ["Sales team size", "Marketing spend", "Conversion rates"],
+      "market": ["Market size", "Competition", "External factors"]
+    },
+    "predictive_factors": {
+      "internal": ["Sales capacity", "Marketing budget", "Product development"],
+      "external": ["Market growth", "Economic conditions", "Competitive landscape"],
+      "seasonal": ["Holiday patterns", "Business cycles", "Industry trends"]
+    }
+  }
+}
