@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Download, TrendingUp, Brain } from 'lucide-react';
 import { ForecastTable } from './forecast-table';
 import { ForecastChart } from './forecast-chart';
+import { VoiceExplainer } from './voice-explainer';
 import { useMemo } from 'react';
 import { AutomateFinancialForecastingOutput } from '@/ai/flows/automate-financial-forecasting';
 import { PredictionResult } from '@/lib/ml-predictor';
@@ -260,6 +261,13 @@ export function ForecastView({ data, mlPredictions }: ForecastViewProps) {
           <ForecastChart data={chartData} />
         </CardContent>
       </Card>
+
+      {/* Voice Explanation */}
+      <VoiceExplainer 
+        forecastData={data} 
+        mlPredictions={mlPredictions}
+        className="mt-8"
+      />
     </div>
   );
 }
