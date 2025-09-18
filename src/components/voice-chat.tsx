@@ -211,6 +211,8 @@ export function VoiceChat({ onMessage, onForecastGenerated, className }: VoiceCh
 
       const result = await response.json();
       
+      console.log('Voice chat - API response:', result);
+      
       if (result.success && result.response) {
         // Add EVE's response to conversation history
         setState(prev => ({
@@ -243,8 +245,20 @@ export function VoiceChat({ onMessage, onForecastGenerated, className }: VoiceCh
         }
       } else {
         const errorMsg = result.error || 'Failed to get response from EVE';
+        console.error('Voice chat - API error:', errorMsg, result);
         setError(errorMsg);
-        await speakMessage("I'm sorry, I encountered an error. Please try again.");
+        
+        // Provide a more helpful error message
+        let errorResponse = "I'm sorry, I encountered an error processing your request. ";
+        if (message.toLowerCase().includes('mrr') || message.toLowerCase().includes('revenue')) {
+          errorResponse += "For MRR and revenue information, try asking me to 'generate a financial forecast' first.";
+        } else if (message.toLowerCase().includes('customer') || message.toLowerCase().includes('trend')) {
+          errorResponse += "For customer trends, try asking me to 'generate a financial forecast' or 'show customer growth trends'.";
+        } else {
+          errorResponse += "Please try rephrasing your question or ask me to 'generate a financial forecast'.";
+        }
+        
+        await speakMessage(errorResponse);
       }
     } catch (error) {
       console.error('Error processing message:', error);

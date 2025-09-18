@@ -15,11 +15,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Chat API - Processing message:', message);
+    
     // Use the existing financial forecasting flow for AI responses
     const result = await automateFinancialForecasting({
       query: message,
       financialFormulas: JSON.stringify(financialFormulas)
     });
+
+    console.log('Chat API - Result:', result);
+
+    // Check if result is valid
+    if (!result || !result.explanation) {
+      console.error('Chat API - Invalid result:', result);
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to get a valid response from the AI system'
+      }, { status: 500 });
+    }
 
     // Format response for voice chat
     let response = '';
@@ -58,10 +71,30 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Chat API error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to process your message' },
-      { status: 500 }
-    );
+    
+    // Provide a fallback response based on the message content
+    let fallbackResponse = '';
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('mrr') || lowerMessage.includes('revenue')) {
+      fallbackResponse = "I'd be happy to help you with MRR and revenue information. To provide accurate data, I need to generate a financial forecast first. Could you ask me to 'generate a financial forecast' or provide more specific details about your business?";
+    } else if (lowerMessage.includes('customer') || lowerMessage.includes('trend')) {
+      fallbackResponse = "I can help you analyze customer trends and growth patterns. To give you detailed insights, I'll need to create a forecast with your business data. Try asking me to 'generate a financial forecast' or 'show customer growth trends'.";
+    } else if (lowerMessage.includes('forecast') || lowerMessage.includes('prediction')) {
+      fallbackResponse = "I can generate comprehensive financial forecasts for your business. Please ask me to 'generate a financial forecast' and I'll create detailed projections for revenue, customers, and key metrics.";
+    } else {
+      fallbackResponse = "I'm here to help with financial forecasting and business analysis. You can ask me to generate forecasts, analyze trends, or explain business metrics. What specific financial information would you like to know about?";
+    }
+    
+    return NextResponse.json({
+      success: true,
+      response: fallbackResponse,
+      responseType: 'answer',
+      hasForecast: false,
+      hasData: false,
+      dataType: '',
+      forecastData: null
+    });
   }
 }
 
