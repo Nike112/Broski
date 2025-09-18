@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface VoiceChatProps {
   onMessage?: (message: string) => void;
+  onForecastGenerated?: (data: any) => void;
   className?: string;
 }
 
@@ -33,10 +34,12 @@ interface ConversationState {
     type: 'user' | 'assistant';
     message: string;
     timestamp: Date;
+    hasData?: boolean;
+    dataType?: string;
   }>;
 }
 
-export function VoiceChat({ onMessage, className }: VoiceChatProps) {
+export function VoiceChat({ onMessage, onForecastGenerated, className }: VoiceChatProps) {
   const [state, setState] = useState<ConversationState>({
     isCallActive: false,
     isListening: false,
@@ -217,13 +220,27 @@ export function VoiceChat({ onMessage, className }: VoiceChatProps) {
             {
               type: 'assistant',
               message: result.response,
-              timestamp: new Date()
+              timestamp: new Date(),
+              hasData: result.hasData,
+              dataType: result.dataType
             }
           ]
         }));
 
         // Speak EVE's response
         await speakMessage(result.response);
+        
+        // If there's forecast data, provide additional guidance and trigger callback
+        if (result.hasForecast && result.forecastData) {
+          // Trigger forecast generation callback
+          if (onForecastGenerated) {
+            onForecastGenerated(result.forecastData);
+          }
+          
+          setTimeout(async () => {
+            await speakMessage("I've also generated detailed ML predictions with confidence intervals and scenario analysis. You can find all the data in the Forecast tab.");
+          }, 2000);
+        }
       } else {
         const errorMsg = result.error || 'Failed to get response from EVE';
         setError(errorMsg);
@@ -435,7 +452,19 @@ export function VoiceChat({ onMessage, className }: VoiceChatProps) {
                 }`}
               >
                 <div className="flex justify-between items-start">
-                  <p>{entry.message}</p>
+                  <div className="flex-1">
+                    <p>{entry.message}</p>
+                    {entry.hasData && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                          📊 Data Available
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Check Forecast tab
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <span className="text-xs opacity-70 ml-2">
                     {formatTime(entry.timestamp)}
                   </span>
@@ -451,14 +480,18 @@ export function VoiceChat({ onMessage, className }: VoiceChatProps) {
             <p className="font-medium">Start a voice conversation with EVE</p>
             <p>Ask questions about:</p>
             <ul className="text-xs space-y-1 mt-2">
-              <li>• Your financial forecasts and projections</li>
-              <li>• Revenue and customer growth trends</li>
-              <li>• Business metrics and KPIs</li>
-              <li>• Risk factors and scenarios</li>
-              <li>• ML predictions and confidence levels</li>
+              <li>• "Generate a financial forecast for my business"</li>
+              <li>• "What's my revenue projection for next quarter?"</li>
+              <li>• "Show me customer growth trends"</li>
+              <li>• "What are the risk factors in my forecast?"</li>
+              <li>• "Explain my ML predictions and confidence levels"</li>
+              <li>• "Create a scenario analysis for my business"</li>
             </ul>
             <p className="text-xs mt-3 p-2 bg-blue-50 rounded">
-              💡 <strong>Tip:</strong> Speak clearly and ask specific questions for the best results
+              💡 <strong>Tip:</strong> For detailed data and charts, EVE will guide you to the Forecast tab
+            </p>
+            <p className="text-xs p-2 bg-green-50 rounded">
+              🎯 <strong>Note:</strong> EVE has full access to all chatbot knowledge and can answer any financial question
             </p>
           </div>
         )}

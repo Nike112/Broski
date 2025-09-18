@@ -103,7 +103,7 @@ export default function Home() {
         {view === 'realtime' && <RealtimeDashboard />}
         {view === 'sources' && <DataSourcesConfig />}
         {view === 'chatbot' && <ChatInterface onForecastGenerated={handleForecastGenerated} onMlPredictionsGenerated={handleMlPredictionsGenerated} onSwitchToVoice={() => handleViewChange('voice-chat')} />}
-        {view === 'voice-chat' && <VoiceChat />}
+        {view === 'voice-chat' && <VoiceChat onForecastGenerated={handleForecastGenerated} />}
         {view === 'forecast' && forecastData && <ForecastView data={forecastData} mlPredictions={mlPredictions} />}
       </main>
     </div>
