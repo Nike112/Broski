@@ -124,29 +124,38 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
       contextQuery = `${query}\n\n${businessContext}`;
     }
 
-    const prompt = `You are EVE, a financial AI assistant for SaaS businesses. 
+    const prompt = `You are an AI CFO Assistant integrated with a dashboard.
 
-**CRITICAL RULES:**
-1. Keep responses CONCISE and DIRECT
-2. NO unnecessary explanations or verbose text
-3. Focus on the specific question asked
-4. Use the knowledge base for accurate calculations
+**DECISION FRAMEWORK:**
+
+1. **CHAT OUTPUT ONLY** (Single value, short explanation):
+   - Direct facts: "What is our current MRR?"
+   - Single metrics: "How many new customers this quarter?"
+   - Formula applications: "What is our CAC?"
+   - Keep responses SHORT and DIRECT
+   - NO tables, NO verbose explanations
+
+2. **FORECAST SECTION** (Multiple periods, breakdowns):
+   - Projections: "Show MRR forecast for next 6 months"
+   - Comparisons: "Compare large vs small customers for 12 months"
+   - Breakdowns: "Give churn projections for next 3 quarters"
+   - Return structured data for dashboard
 
 **USER QUERY:** ${contextQuery}
 
 **FINANCIAL FORMULAS KNOWLEDGE BASE:** ${JSON.stringify(formulas, null, 2)}
 
 **YOUR TASK:**
-1. Answer the specific question asked
-2. Use the knowledge base for calculations
-3. Keep responses short and to the point
-4. For forecasts, just say "Check the Forecast tab for detailed projections"
+1. Determine if this needs a simple chat answer OR forecast data
+2. For simple answers: Be direct and concise
+3. For forecasts: Say "Check the Forecast tab for detailed projections"
+4. Use the knowledge base for accurate calculations
 
 **RESPONSE FORMAT:**
-- Be direct and concise
-- No long explanations unless specifically asked
+- Simple questions → Short, direct answers
+- Forecast questions → "Check the Forecast tab for detailed projections"
+- Be helpful but concise
 - Use actual calculations from the knowledge base
-- Keep it simple and helpful
 
 Respond now:`;
 
@@ -154,29 +163,28 @@ Respond now:`;
     const response = await result.response;
     const text = response.text();
 
-    // Check if this is a forecast request that needs a table
+    // Check if this is a forecast request that needs structured data
     const lowerQuery = query.toLowerCase();
     const isForecastRequest = (
-      // Explicit forecast/projection requests
-      (lowerQuery.includes('forecast') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show'))) ||
-      (lowerQuery.includes('projection') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show'))) ||
-      (lowerQuery.includes('predict') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show'))) ||
+      // Multiple time periods or breakdowns
+      (lowerQuery.includes('forecast') && (lowerQuery.includes('next') || lowerQuery.includes('for the next'))) ||
+      (lowerQuery.includes('projection') && (lowerQuery.includes('next') || lowerQuery.includes('for the next'))) ||
+      (lowerQuery.includes('compare') && (lowerQuery.includes('vs') || lowerQuery.includes('versus'))) ||
+      (lowerQuery.includes('breakdown') || lowerQuery.includes('by segment') || lowerQuery.includes('by customer')) ||
       
-      // Specific time period requests
-      (lowerQuery.includes('month') && (lowerQuery.includes('6') || lowerQuery.includes('12') || lowerQuery.includes('18') || lowerQuery.includes('24'))) ||
-      (lowerQuery.includes('year') && (lowerQuery.includes('1') || lowerQuery.includes('2'))) ||
+      // Specific time horizons
+      (lowerQuery.includes('next') && (lowerQuery.includes('6 months') || lowerQuery.includes('12 months') || lowerQuery.includes('quarters'))) ||
+      (lowerQuery.includes('monthly') || lowerQuery.includes('quarterly') || lowerQuery.includes('yearly')) ||
       
-      // Scenario analysis requests
-      (lowerQuery.includes('what if') && (lowerQuery.includes('double') || lowerQuery.includes('reduce') || lowerQuery.includes('increase'))) ||
-      (lowerQuery.includes('scenario') && (lowerQuery.includes('optimistic') || lowerQuery.includes('pessimistic') || lowerQuery.includes('realistic') || lowerQuery.includes('with'))) ||
-      (lowerQuery.includes('show scenario')) ||
+      // Scenario analysis with time periods
+      (lowerQuery.includes('what if') && (lowerQuery.includes('next') || lowerQuery.includes('over'))) ||
+      (lowerQuery.includes('scenario') && (lowerQuery.includes('next') || lowerQuery.includes('over'))) ||
       
-      // Specific forecast types
-      lowerQuery.includes('quarterly forecast') ||
-      lowerQuery.includes('annual forecast') ||
+      // Explicit multi-period requests
       lowerQuery.includes('month by month') ||
-      lowerQuery.includes('breakdown') ||
-      lowerQuery.includes('table')
+      lowerQuery.includes('quarter by quarter') ||
+      lowerQuery.includes('over time') ||
+      lowerQuery.includes('trend analysis')
     );
     
     if (isForecastRequest) {
