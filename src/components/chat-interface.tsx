@@ -15,6 +15,7 @@ import { AutomateFinancialForecastingOutput } from '@/ai/flows/automate-financia
 import { ExcelUpload } from './excel-upload';
 import { ParsedExcelData } from '@/lib/excel-parser';
 import { MLPredictor, PredictionResult } from '@/lib/ml-predictor';
+import { MarkdownText } from '@/lib/markdown-parser';
 
 type ChatInterfaceProps = {
   onForecastGenerated: (data: AutomateFinancialForecastingOutput) => void;
@@ -134,6 +135,11 @@ export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated, o
           };
            
            addMessage(assistantResponseMessage);
+           
+           // Automatically update forecast if this is a forecast response
+           if (response.responseType === 'forecast') {
+             onForecastGenerated(response);
+           }
         }
       });
     });
@@ -198,7 +204,7 @@ export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated, o
                       </div>
                    ) : (
                     <div>
-                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      <MarkdownText content={message.content} />
                        {message.forecastData && (
                          <Button
                           onClick={() => onForecastGenerated(message.forecastData!)}

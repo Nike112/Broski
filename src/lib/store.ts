@@ -25,7 +25,12 @@ export interface FinancialInputs {
   smCustomerGrossMargin?: number;
 
   // Company-wide
-  operatingExpenses?: number;
+  operatingExpenses?: number; // Current monthly operating expenses
+  
+  // Cash Flow & Profitability
+  cashInBank?: number;
+  operatingExpenseGrowthRate?: number; // % per month
+  grossMarginRate?: number; // Gross margin percentage (e.g., 0.70 for 70%)
 }
 
 export interface ChatMessage {

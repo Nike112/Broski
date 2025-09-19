@@ -11,7 +11,7 @@ import { AutomateFinancialForecastingOutput } from '@/ai/flows/automate-financia
 import { PredictionResult } from '@/lib/ml-predictor';
 
 type ForecastViewProps = {
-  data: AutomateFinancialForecastingOutput;
+  data: AutomateFinancialForecastingOutput | null;
   mlPredictions?: PredictionResult[];
 };
 
@@ -174,6 +174,7 @@ function MLPredictionTable({ predictions }: { predictions: PredictionResult[] })
 export function ForecastView({ data, mlPredictions }: ForecastViewProps) {
     
   const handleDownload = () => {
+    if (!data?.forecast) return;
     const lines = data.forecast.trim().split('\n').filter(line => line.trim().startsWith('|'));
     if (lines.length === 0) return;
     
@@ -190,7 +191,7 @@ export function ForecastView({ data, mlPredictions }: ForecastViewProps) {
   };
 
   const chartData = useMemo(() => {
-    if (!data.forecast) return [];
+    if (!data?.forecast) return [];
     
     const parsed = parseForecastData(data.forecast);
     const revenueMetrics = [
@@ -199,14 +200,46 @@ export function ForecastView({ data, mlPredictions }: ForecastViewProps) {
         'Total Revenues',
     ];
     return parsed?.filter(p => revenueMetrics.some(m => p[m])) || [];
-  }, [data.forecast]);
+  }, [data?.forecast]);
+
+  // Show empty state when no forecast data is available
+  if (!data) {
+    return (
+      <div className="container mx-auto p-4 md:p-8 space-y-8">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold text-foreground">EveBhau Financial Forecast Dashboard</h1>
+          <p className="text-muted-foreground">AI-powered predictions and machine learning insights for your business</p>
+        </div>
+        
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <TrendingUp className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No Forecast Data Available</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              To see your financial forecasts, please:
+            </p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>1. Enter your business data in the Dashboard</p>
+              <p>2. Ask EVE to generate a forecast</p>
+              <p>3. Or use the chatbot to request specific projections</p>
+            </div>
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>💡 Tip:</strong> Try asking EVE: "Generate a 6-month forecast" or "What's our MRR?"
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
       {/* Page Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Inceptico Financial Forecast Dashboard</h1>
+        <h1 className="text-3xl font-bold text-foreground">EveBhau Financial Forecast Dashboard</h1>
         <p className="text-muted-foreground">AI-powered predictions and machine learning insights for your business</p>
       </div>
       {/* AI Forecast */}

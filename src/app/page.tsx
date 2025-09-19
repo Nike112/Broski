@@ -40,7 +40,7 @@ export default function Home() {
         <div className="flex items-center">
           <Bot className="w-8 h-8 mr-2 text-primary" />
           <h1 className="text-2xl font-bold text-primary-foreground font-headline">
-            Inceptico
+            EveBhau
           </h1>
         </div>
         <nav className="flex items-center gap-2">
@@ -91,7 +91,6 @@ export default function Home() {
             variant={view === 'forecast' ? 'secondary' : 'ghost'}
             onClick={() => handleViewChange('forecast')}
             size="sm"
-            disabled={!forecastData}
           >
             <PieChart className="w-4 h-4 mr-2" />
             Forecast
@@ -104,7 +103,7 @@ export default function Home() {
         {view === 'sources' && <DataSourcesConfig />}
         {view === 'chatbot' && <ChatInterface onForecastGenerated={handleForecastGenerated} onMlPredictionsGenerated={handleMlPredictionsGenerated} onSwitchToVoice={() => handleViewChange('voice-chat')} />}
         {view === 'voice-chat' && <VoiceChat onForecastGenerated={handleForecastGenerated} />}
-        {view === 'forecast' && forecastData && <ForecastView data={forecastData} mlPredictions={mlPredictions} />}
+        {view === 'forecast' && <ForecastView data={forecastData} mlPredictions={mlPredictions} />}
       </main>
     </div>
   );

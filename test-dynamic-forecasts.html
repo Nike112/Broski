@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Dynamic Forecast Updates</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .forecast-table { font-family: monospace; font-size: 12px; white-space: pre; background: white; padding: 10px; border: 1px solid #ddd; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Dynamic Forecast Updates</h1>
+    <p>This tests that forecasts update properly with different time periods and inputs.</p>
+    
+    <div class="test-section">
+        <h3>Test 1: 6-Month Forecast</h3>
+        <button onclick="testForecast('Generate a 6-month forecast', 'result1')">Test 6-Month</button>
+        <div id="result1" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: 1-Year Forecast</h3>
+        <button onclick="testForecast('Show me 1 year projections', 'result2')">Test 1-Year</button>
+        <div id="result2" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: 2-Year Forecast</h3>
+        <button onclick="testForecast('Generate 24 month forecast', 'result3')">Test 2-Year</button>
+        <div id="result3" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 4: Different Inputs - Same Query</h3>
+        <button onclick="testForecastWithInputs('Generate a 6-month forecast', 'result4', {largeCustomers: 10, smallMediumCustomers: 100})">Test with 10 Large + 100 SMB</button>
+        <div id="result4" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 5: Verify Updates</h3>
+        <button onclick="runUpdateTest()">Run Update Test</button>
+        <div id="result5" class="result"></div>
+    </div>
+
+    <script>
+        const mockInputs = {
+            largeCustomers: 5,
+            smallMediumCustomers: 50,
+            revPerLargeCustomer: 16500,
+            revPerSmallMediumCustomer: 3000,
+            salesExecutives: 3,
+            salesExecutivesAddedPerMonth: 1,
+            salesConversionPerExec: 1.5,
+            avgSalesCycleMonths: 3,
+            rampUpPeriodMonths: 3,
+            annualChurnRate: 10,
+            grossMarginRate: 70,
+            marketingSpend: 10000,
+            cac: 1500,
+            conversionRate: 45,
+            monthlyChurnRate: 2,
+            operatingExpenses: 50000,
+            operatingExpenseGrowthRate: 5,
+            cashInBank: 500000
+        };
+        
+        async function testForecast(query, resultId) {
+            await testForecastWithInputs(query, resultId, mockInputs);
+        }
+        
+        async function testForecastWithInputs(query, resultId, inputs) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/test-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        inputs: inputs
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.responseType === 'forecast') {
+                    const monthCount = (data.forecast.match(/\|/g) || []).length - 2; // Subtract header and separator
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ SUCCESS: Generated ${monthCount}-month forecast</div>
+                        <strong>Query:</strong> ${query}<br>
+                        <strong>Response Type:</strong> ${data.responseType}<br>
+                        <strong>Period:</strong> ${data.explanation.includes('12 months') ? '12 months' : data.explanation.includes('6 months') ? '6 months' : data.explanation.includes('24 months') ? '24 months' : 'Unknown'}<br>
+                        <strong>Forecast Table:</strong><br>
+                        <div class="forecast-table">${data.forecast}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ ERROR: Not a forecast response</div>
+                        <strong>Response:</strong> ${data.explanation || data}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ERROR: ${error.message}</div>`;
+            }
+        }
+        
+        async function runUpdateTest() {
+            const resultDiv = document.getElementById('result5');
+            resultDiv.innerHTML = 'Running update test...';
+            
+            try {
+                // Test 1: 6-month forecast
+                const response1 = await fetch('/api/test-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: 'Generate a 6-month forecast', inputs: mockInputs })
+                });
+                const data1 = await response1.json();
+                const months1 = (data1.forecast.match(/\|/g) || []).length - 2;
+                
+                // Test 2: 1-year forecast
+                const response2 = await fetch('/api/test-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: 'Show me 1 year projections', inputs: mockInputs })
+                });
+                const data2 = await response2.json();
+                const months2 = (data2.forecast.match(/\|/g) || []).length - 2;
+                
+                // Test 3: Different inputs
+                const response3 = await fetch('/api/test-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        query: 'Generate a 6-month forecast', 
+                        inputs: {...mockInputs, largeCustomers: 10, smallMediumCustomers: 100} 
+                    })
+                });
+                const data3 = await response3.json();
+                const months3 = (data3.forecast.match(/\|/g) || []).length - 2;
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ UPDATE TEST RESULTS:</div>
+                    <strong>Test 1 (6-month):</strong> ${months1} months ✅<br>
+                    <strong>Test 2 (1-year):</strong> ${months2} months ✅<br>
+                    <strong>Test 3 (different inputs):</strong> ${months3} months ✅<br>
+                    <br>
+                    <strong>Conclusion:</strong> ${months1 !== months2 ? '✅ Forecasts update with different periods' : '❌ Forecasts not updating'} <br>
+                    <strong>Input Sensitivity:</strong> ${data1.forecast !== data3.forecast ? '✅ Forecasts update with different inputs' : '❌ Forecasts not input-sensitive'}
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ UPDATE TEST ERROR: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

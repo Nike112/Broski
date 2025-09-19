@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Forecast Update</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Test Forecast Update Functionality</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Basic Forecast Request</h3>
+        <button onclick="testForecast('Generate a 6-month forecast')">Test Forecast</button>
+        <div id="result1" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Different Forecast Request</h3>
+        <button onclick="testForecast('Show me projections for next year')">Test Year Projection</button>
+        <div id="result2" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Custom Input</h3>
+        <input type="text" id="customQuery" placeholder="Enter your query..." value="What's our MRR?">
+        <button onclick="testForecast(document.getElementById('customQuery').value)">Test Custom Query</button>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <script>
+        async function testForecast(query) {
+            const resultId = event.target.parentElement.querySelector('.result').id;
+            const resultDiv = document.getElementById(resultId);
+            
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Mock financial inputs for testing
+                const mockInputs = {
+                    largeCustomers: 5,
+                    smallMediumCustomers: 50,
+                    revPerLargeCustomer: 16500,
+                    revPerSmallMediumCustomer: 3000,
+                    salesExecutives: 3,
+                    salesExecutivesAddedPerMonth: 1,
+                    salesConversionPerExec: 1.5,
+                    avgSalesCycleMonths: 3,
+                    rampUpPeriodMonths: 3,
+                    annualChurnRate: 10,
+                    grossMarginRate: 70,
+                    marketingSpend: 10000,
+                    cac: 1500,
+                    conversionRate: 45,
+                    monthlyChurnRate: 2,
+                    operatingExpenses: 50000,
+                    operatingExpenseGrowthRate: 5,
+                    cashInBank: 500000
+                };
+                
+                const response = await fetch('/api/test-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        inputs: mockInputs
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <strong>Query:</strong> ${query}<br>
+                    <strong>Response Type:</strong> ${data.responseType || 'string'}<br>
+                    <strong>Response:</strong><br>
+                    <pre style="white-space: pre-wrap; background: white; padding: 10px; border: 1px solid #ddd;">${data.explanation || data}</pre>
+                    ${data.forecast ? `<strong>Forecast Data:</strong><br><pre style="white-space: pre-wrap; background: white; padding: 10px; border: 1px solid #ddd;">${data.forecast}</pre>` : ''}
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

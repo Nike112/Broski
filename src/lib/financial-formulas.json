@@ -144,7 +144,7 @@
     "mrr": ["mrr", "monthly recurring revenue", "monthly revenue", "recurring revenue", "monthly income", "monthly subscription"],
     "arr": ["arr", "annual recurring revenue", "annual revenue", "yearly revenue", "annual subscription"],
     "arpu": ["arpu", "average revenue per user", "revenue per customer", "per customer revenue", "average revenue"],
-    "gross_margin": ["gross margin", "margin", "profit margin", "gross profit", "profitability"],
+    "gross_margin": ["gross margin", "margin", "profit margin", "gross profit", "profitability", "margin percentage", "gross margin %", "gross profit margin"],
     "revenue_churn_rate": ["revenue churn", "revenue churn rate", "mrr churn", "revenue loss", "revenue attrition"],
     "customer_churn_rate": ["customer churn", "churn rate", "customer loss", "attrition rate", "customer attrition"],
     "net_revenue_retention_nrr": ["nrr", "net revenue retention", "revenue retention", "customer retention", "retention rate"],
@@ -152,6 +152,88 @@
     "customer_acquisition_cost_cac": ["cac", "customer acquisition cost", "acquisition cost", "cost to acquire", "acquisition expense"],
     "ltv_cac_ratio": ["ltv cac ratio", "ltv/cac", "lifetime value to acquisition cost", "value to cost ratio", "ltv cac"],
     "cac_payback_period": ["cac payback", "payback period", "acquisition payback", "cost recovery", "payback time"],
-    "operating_expenses": ["operating expenses", "opex", "operating costs", "business expenses", "operational costs"]
+    "operating_expenses": ["operating expenses", "opex", "operating costs", "business expenses", "operational costs"],
+    "cash_flow": ["cash flow", "cash runway", "burn rate", "cash burn", "runway", "cash position"],
+    "profitability": ["profitability", "break even", "break-even", "break even point", "profit", "net income"],
+    "burn_rate": ["burn rate", "cash burn", "monthly burn", "burn forecast"],
+    "cash_runway": ["cash runway", "runway", "months of cash", "cash remaining", "runway forecast"],
+    "break_even": ["break even", "break-even", "break even point", "breakeven", "break even forecast"],
+    "monthly_profit": ["monthly profit", "net profit", "monthly income", "net income"],
+    "net_margin": ["net margin", "net margin percentage", "net margin %", "profit margin", "net profit margin"]
+  },
+  "company_wide": {
+    "operating_expenses": {
+      "description": "Monthly operating expenses including salaries, rent, utilities, etc.",
+      "default_value": 50000
+    },
+    "cash_flow": {
+      "cash_in_bank": {
+        "description": "Current cash balance in bank account",
+        "default_value": 500000
+      },
+      "operating_expense_growth_rate": {
+        "description": "Monthly growth rate of operating expenses (%)",
+        "default_value": 0.05
+      }
+    }
+  },
+  "profitability_metrics": {
+    "burn_rate": {
+      "formula": "monthly_revenue - monthly_operating_expenses",
+      "description": "Monthly cash burn rate (negative means burning cash)",
+      "keywords": ["burn rate", "cash burn", "monthly burn", "cash flow"]
+    },
+    "cash_runway": {
+      "formula": "cash_in_bank / abs(burn_rate)",
+      "description": "Months of cash remaining at current burn rate",
+      "keywords": ["cash runway", "runway", "months of cash", "cash remaining"]
+    },
+    "break_even_point": {
+      "formula": "operating_expenses / gross_margin_per_customer",
+      "description": "Number of customers needed to break even",
+      "keywords": ["break even", "break-even", "break even point", "breakeven"]
+    },
+    "gross_margin_per_customer": {
+      "formula": "(revenue_per_customer * gross_margin_rate) - variable_costs_per_customer",
+      "description": "Gross profit per customer after variable costs",
+      "keywords": ["gross margin per customer", "profit per customer", "customer margin"]
+    },
+    "monthly_profit": {
+      "formula": "gross_profit - operating_expenses",
+      "description": "Monthly net profit after all expenses",
+      "keywords": ["monthly profit", "net profit", "monthly income", "profit"]
+    },
+    "gross_margin_percentage": {
+      "formula": "(gross_profit / revenue) * 100",
+      "description": "Gross margin as a percentage of revenue",
+      "keywords": ["gross margin", "margin percentage", "gross margin %"]
+    },
+    "net_margin_percentage": {
+      "formula": "(net_profit / revenue) * 100",
+      "description": "Net margin as a percentage of revenue",
+      "keywords": ["net margin", "net margin percentage", "net margin %", "profit margin"]
+    }
+  },
+  "cash_flow_formulas": {
+    "burn_rate_forecast": {
+      "formula": "projected_revenue * gross_margin_rate - projected_operating_expenses",
+      "description": "Projected monthly burn rate based on revenue and expense forecasts",
+      "keywords": ["burn rate forecast", "projected burn", "future burn rate"]
+    },
+    "cash_runway_forecast": {
+      "formula": "remaining_cash / projected_burn_rate",
+      "description": "Projected months of cash remaining based on forecast",
+      "keywords": ["runway forecast", "projected runway", "future runway"]
+    },
+    "break_even_forecast": {
+      "formula": "projected_operating_expenses / (projected_revenue_per_customer * gross_margin_rate)",
+      "description": "Projected number of customers needed to break even",
+      "keywords": ["break even forecast", "projected break even", "future break even"]
+    },
+    "cumulative_cash_flow": {
+      "formula": "initial_cash + sum(monthly_cash_flow)",
+      "description": "Running total of cash position over time",
+      "keywords": ["cumulative cash", "cash position", "total cash flow"]
+    }
   }
 }

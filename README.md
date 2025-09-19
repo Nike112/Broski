@@ -61,8 +61,8 @@ A comprehensive financial forecasting platform with real-time data integration, 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/neural-dao.git
-   cd neural-dao
+   git clone https://github.com/yourusername/evebhau-ai.git
+   cd evebhau-ai
    ```
 
 2. **Install dependencies**
@@ -265,8 +265,8 @@ vercel --prod
 
 ### Docker
 ```bash
-docker build -t neural-dao .
-docker run -p 3000:3000 neural-dao
+docker build -t evebhau-ai .
+docker run -p 3000:3000 evebhau-ai
 ```
 
 ### Environment Variables
@@ -298,10 +298,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Documentation**: [docs.neural-dao.com](https://docs.neural-dao.com)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/neural-dao/issues)
-- **Discord**: [Join our community](https://discord.gg/neural-dao)
-- **Email**: support@neural-dao.com
+- **Documentation**: [docs.evebhau.com](https://docs.evebhau.com)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/evebhau-ai/issues)
+- **Discord**: [Join our community](https://discord.gg/evebhau)
+- **Email**: support@evebhau.com
 
 ## 🎯 Roadmap
 
