@@ -212,45 +212,21 @@ Use the knowledge base to provide accurate financial information. Be concise and
     const response = await result.response;
     const text = response.text();
 
-    // Check if this is a forecast request that needs structured data (HUGE TABLES ONLY)
-    const isForecastRequest = (
-      // Explicit table generation requests
+    // ONLY show forecast for explicit table generation requests
+    const shouldShowForecast = (
+      // Must have BOTH action word AND table keyword
       (lowerQuery.includes('generate') && lowerQuery.includes('table')) ||
       (lowerQuery.includes('create') && lowerQuery.includes('table')) ||
       (lowerQuery.includes('show') && lowerQuery.includes('table')) ||
       
-      // Multi-period forecast requests with specific timeframes
+      // Must have BOTH forecast/projection AND specific timeframe
       (lowerQuery.includes('generate') && lowerQuery.includes('forecast') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month'))) ||
       (lowerQuery.includes('create') && lowerQuery.includes('projection') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month'))) ||
       
-      // Monthly/quarterly breakdown tables
+      // Must have BOTH breakdown AND time period
       (lowerQuery.includes('monthly') && lowerQuery.includes('breakdown')) ||
-      (lowerQuery.includes('quarterly') && lowerQuery.includes('breakdown')) ||
-      
-      // Scenario analysis tables
-      (lowerQuery.includes('scenario') && lowerQuery.includes('analysis')) ||
-      (lowerQuery.includes('what if') && lowerQuery.includes('scenario'))
+      (lowerQuery.includes('quarterly') && lowerQuery.includes('breakdown'))
     );
-
-    // EXCLUDE simple definition and calculation questions
-    const isSimpleQuestion = (
-      lowerQuery.includes('what is') ||
-      lowerQuery.includes('what are') ||
-      lowerQuery.includes('define') ||
-      lowerQuery.includes('explain') ||
-      lowerQuery.includes('calculate') ||
-      lowerQuery.includes('our current') ||
-      lowerQuery.includes('our ') ||
-      (lowerQuery.includes('mrr') && !lowerQuery.includes('table')) ||
-      (lowerQuery.includes('arr') && !lowerQuery.includes('table')) ||
-      (lowerQuery.includes('cac') && !lowerQuery.includes('table')) ||
-      (lowerQuery.includes('ltv') && !lowerQuery.includes('table')) ||
-      (lowerQuery.includes('churn') && !lowerQuery.includes('table')) ||
-      (lowerQuery.includes('burn rate') && !lowerQuery.includes('table'))
-    );
-
-    // Only trigger forecast if it's a table request AND not a simple question
-    const shouldShowForecast = isForecastRequest && !isSimpleQuestion;
     
     if (shouldShowForecast) {
       // Generate forecast data with real-time months
