@@ -124,50 +124,15 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
       contextQuery = `${query}\n\n${businessContext}`;
     }
 
-    // Check if this is a definition question (not asking for current values)
     const lowerQuery = query.toLowerCase();
-    const isDefinitionQuestion = (
-      (lowerQuery.includes('what is') && !lowerQuery.includes('our current') && !lowerQuery.includes('our ')) ||
-      (lowerQuery.includes('what are') && !lowerQuery.includes('our current') && !lowerQuery.includes('our ')) ||
-      lowerQuery.includes('define') ||
-      lowerQuery.includes('explain') ||
-      lowerQuery.includes('meaning of')
-    );
 
-    const prompt = `You are an AI CFO Assistant with access to a comprehensive financial knowledge base.
-
-**CRITICAL INSTRUCTIONS:**
-1. ALWAYS use the provided knowledge base for ALL financial questions
-2. Keep responses SHORT and DIRECT - NO explanations
-3. For DEFINITIONS: Just give the definition and formula
-4. For CALCULATIONS: Just show the result
-5. For TABLES/COMPARISONS: Say "Check the Forecast tab for detailed data"
+    const prompt = `You are an AI CFO Assistant. Answer the user's financial question concisely.
 
 **USER QUERY:** ${contextQuery}
 
 **FINANCIAL KNOWLEDGE BASE:** ${JSON.stringify(formulas, null, 2)}
 
-**YOUR TASK:**
-1. **DEFINITION QUESTIONS** (What is MRR?, What is CAC?, etc.):
-   - Give the definition from knowledge base
-   - Include the formula
-   - NO explanations or examples
-
-2. **CALCULATION QUESTIONS** (Calculate our MRR, What's our burn rate, etc.):
-   - Use the knowledge base formulas
-   - Show the calculation result
-   - NO explanations
-
-3. **TABLE/COMPARISON QUESTIONS** (Show breakdown, Compare metrics, etc.):
-   - Say "Check the Forecast tab for detailed data"
-
-**RESPONSE FORMAT:**
-- Be direct and concise
-- NO explanations or context
-- Just the answer
-- Use knowledge base formulas
-
-Respond now using the knowledge base:`;
+Use the knowledge base to provide accurate financial information. Be concise and direct.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -175,26 +140,17 @@ Respond now using the knowledge base:`;
 
     // Check if this is a forecast request that needs structured data
     const isForecastRequest = (
-      // Explicit forecast/projection requests with action words
-      (lowerQuery.includes('generate') && (lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
-      (lowerQuery.includes('create') && (lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
-      (lowerQuery.includes('show') && (lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
-      
-      // Specific time period forecasts
-      (lowerQuery.includes('6 month') && lowerQuery.includes('forecast')) ||
-      (lowerQuery.includes('12 month') && lowerQuery.includes('forecast')) ||
-      (lowerQuery.includes('quarterly forecast')) ||
-      (lowerQuery.includes('annual forecast')) ||
-      (lowerQuery.includes('month by month')) ||
-      
-      // Scenario analysis with specific actions
-      (lowerQuery.includes('what if') && (lowerQuery.includes('double') || lowerQuery.includes('reduce') || lowerQuery.includes('increase'))) ||
-      (lowerQuery.includes('scenario') && (lowerQuery.includes('optimistic') || lowerQuery.includes('pessimistic') || lowerQuery.includes('realistic'))) ||
-      
-      // Table requests for forecast tab
-      (lowerQuery.includes('breakdown') && (lowerQuery.includes('monthly') || lowerQuery.includes('quarterly') || lowerQuery.includes('forecast'))) ||
-      (lowerQuery.includes('table') && (lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
-      (lowerQuery.includes('compare') && (lowerQuery.includes('month') || lowerQuery.includes('quarter') || lowerQuery.includes('year')))
+      lowerQuery.includes('forecast') ||
+      lowerQuery.includes('projection') ||
+      lowerQuery.includes('predict') ||
+      lowerQuery.includes('scenario') ||
+      lowerQuery.includes('what if') ||
+      lowerQuery.includes('breakdown') ||
+      lowerQuery.includes('table') ||
+      lowerQuery.includes('compare') ||
+      lowerQuery.includes('monthly') ||
+      lowerQuery.includes('quarterly') ||
+      lowerQuery.includes('yearly')
     );
     
     if (isForecastRequest) {
