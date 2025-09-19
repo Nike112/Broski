@@ -2,6 +2,8 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { FinancialInputs } from '@/lib/store';
+import { MLPredictor, PredictionResult } from '@/lib/ml-predictor';
+import { HistoricalData } from '@/lib/excel-parser';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -41,315 +43,478 @@ function formatInputsForQuery(inputs: FinancialInputs): string {
   return `Business Data: ${joinedParts}`;
 }
 
-// Specialized ML Model Forecast Functions
-function generateEnsembleMLForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
+// Generate realistic historical data from current inputs
+function generateHistoricalData(inputs: FinancialInputs): HistoricalData[] {
+  const historicalData: HistoricalData[] = [];
   const currentDate = new Date();
   
-  let table = `| Month | Revenue (Ensemble ML) | Customers (Ensemble ML) | Confidence | Method |\n`;
-  table += `|-------|----------------------|------------------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  // Generate 24 months of historical data leading up to current state
+  for (let i = 23; i >= 0; i--) {
+    const dataDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
     
-    // Ensemble ML calculations (combining multiple models)
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const growthFactor = 1 + (0.05 * (i + 1)); // 5% monthly growth
-    const mlRevenue = Math.round(baseRevenue * growthFactor);
+    // Calculate historical values based on current inputs with realistic growth
+    const monthsBack = 23 - i;
+    const growthFactor = Math.pow(0.95, monthsBack); // 5% monthly growth backwards
     
-    const baseCustomers = inputs.largeCustomers + inputs.smallMediumCustomers;
-    const customerGrowth = Math.round(baseCustomers * (1 + (0.03 * (i + 1)))); // 3% monthly growth
+    const historicalLargeCustomers = Math.max(1, Math.round((inputs.largeCustomers || 0) * growthFactor));
+    const historicalSmallCustomers = Math.max(1, Math.round((inputs.smallMediumCustomers || 0) * growthFactor));
     
-    const confidence = Math.max(60, 85 - (i * 2)); // Decreasing confidence over time
+    const historicalRevenue = (historicalLargeCustomers * (inputs.revPerLargeCustomer || 16500)) + 
+                             (historicalSmallCustomers * (inputs.revPerSmallMediumCustomer || 3000));
     
-    table += `| ${monthName} | $${mlRevenue.toLocaleString()} | ${customerGrowth} | ${confidence}% | Advanced Ensemble (Linear+Exp+MA+ARIMA+NN+LSTM) |\n`;
+    historicalData.push({
+      date: dataDate.toISOString().split('T')[0],
+      revenue: Math.round(historicalRevenue),
+      customers: historicalLargeCustomers + historicalSmallCustomers
+    });
   }
   
+  return historicalData;
+}
+
+// Convert ML predictions to table format
+function predictionsToTable(predictions: PredictionResult[], modelName: string): string {
+  let table = `| Month | Revenue | Customers | Confidence | Method |\n`;
+  table += `|-------|---------|-----------|------------|--------|\n`;
+  
+  predictions.forEach(prediction => {
+    const date = new Date(prediction.date);
+    const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    
+    table += `| ${monthName} | $${prediction.revenue.toLocaleString()} | ${prediction.customers.toLocaleString()} | ${prediction.confidence.toFixed(1)}% | ${prediction.method} |\n`;
+  });
+  
   return table;
+}
+
+// Specialized ML Model Forecast Functions using real ML algorithms
+function generateEnsembleMLForecast(query: string, inputs: FinancialInputs): string {
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
+    
+    // Use real ML predictor for ensemble predictions
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: true,
+      includeExternalFactors: true,
+      cashFlowInputs: {
+        includeCashFlowProjections: true,
+        operatingExpenses: inputs.operatingExpenses || 50000,
+        growthRate: 0.05
+      }
+    });
+    
+    return predictionsToTable(predictions, 'Ensemble ML');
+  } catch (error) {
+    console.error('Error in ensemble ML forecast:', error);
+    return 'Error generating ensemble ML forecast. Please try again.';
+  }
 }
 
 function generateARIMAForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue (ARIMA) | Customers (ARIMA) | Confidence | Method |\n`;
-  table += `|-------|----------------|-------------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // ARIMA time series calculations
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const arimaRevenue = Math.round(baseRevenue * (1 + (0.04 * (i + 1)) + (0.001 * Math.pow(i + 1, 2)))); // ARIMA trend + seasonality
+    // Use real ML predictor with ARIMA focus
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: false,
+      modelPreferences: {
+        preferredModels: ['ARIMA'],
+        ensembleWeights: {
+          linear: 0.1,
+          exponential: 0.1,
+          movingAverage: 0.1,
+          arima: 0.7, // Focus on ARIMA
+          neuralNetwork: 0.0,
+          lstm: 0.0
+        }
+      }
+    });
     
-    const baseCustomers = inputs.largeCustomers + inputs.smallMediumCustomers;
-    const arimaCustomers = Math.round(baseCustomers * (1 + (0.025 * (i + 1)) + (0.0005 * Math.pow(i + 1, 2))));
-    
-    const confidence = Math.max(65, 80 - (i * 1.5));
-    
-    table += `| ${monthName} | $${arimaRevenue.toLocaleString()} | ${arimaCustomers} | ${confidence}% | ARIMA Time Series Model |\n`;
+    return predictionsToTable(predictions, 'ARIMA');
+  } catch (error) {
+    console.error('Error in ARIMA forecast:', error);
+    return 'Error generating ARIMA forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateNeuralNetworkForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue (Neural Net) | Customers (Neural Net) | Confidence | Method |\n`;
-  table += `|-------|---------------------|------------------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Neural network pattern recognition
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const neuralRevenue = Math.round(baseRevenue * (1 + (0.06 * (i + 1)) + (0.002 * Math.sin(i * 0.5)))); // Complex pattern
+    // Use real ML predictor with Neural Network focus
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: false,
+      modelPreferences: {
+        preferredModels: ['NeuralNetwork'],
+        ensembleWeights: {
+          linear: 0.1,
+          exponential: 0.1,
+          movingAverage: 0.1,
+          arima: 0.1,
+          neuralNetwork: 0.6, // Focus on Neural Networks
+          lstm: 0.0
+        }
+      }
+    });
     
-    const baseCustomers = inputs.largeCustomers + inputs.smallMediumCustomers;
-    const neuralCustomers = Math.round(baseCustomers * (1 + (0.035 * (i + 1)) + (0.001 * Math.cos(i * 0.3))));
-    
-    const confidence = Math.max(70, 85 - (i * 1.2));
-    
-    table += `| ${monthName} | $${neuralRevenue.toLocaleString()} | ${neuralCustomers} | ${confidence}% | Neural Network Pattern Recognition |\n`;
+    return predictionsToTable(predictions, 'Neural Network');
+  } catch (error) {
+    console.error('Error in Neural Network forecast:', error);
+    return 'Error generating Neural Network forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateLSTMForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue (LSTM) | Customers (LSTM) | Confidence | Method |\n`;
-  table += `|-------|---------------|------------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // LSTM sequential learning
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const lstmRevenue = Math.round(baseRevenue * (1 + (0.045 * (i + 1)) + (0.0015 * Math.sin(i * 0.8)))); // Sequential patterns
+    // Use real ML predictor with LSTM focus
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: false,
+      modelPreferences: {
+        preferredModels: ['LSTM'],
+        ensembleWeights: {
+          linear: 0.1,
+          exponential: 0.1,
+          movingAverage: 0.1,
+          arima: 0.1,
+          neuralNetwork: 0.1,
+          lstm: 0.6 // Focus on LSTM
+        }
+      }
+    });
     
-    const baseCustomers = inputs.largeCustomers + inputs.smallMediumCustomers;
-    const lstmCustomers = Math.round(baseCustomers * (1 + (0.03 * (i + 1)) + (0.001 * Math.cos(i * 0.6))));
-    
-    const confidence = Math.max(68, 82 - (i * 1.3));
-    
-    table += `| ${monthName} | $${lstmRevenue.toLocaleString()} | ${lstmCustomers} | ${confidence}% | LSTM Sequential Learning |\n`;
+    return predictionsToTable(predictions, 'LSTM');
+  } catch (error) {
+    console.error('Error in LSTM forecast:', error);
+    return 'Error generating LSTM forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateMonteCarloForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue (Monte Carlo) | Optimistic | Pessimistic | Confidence | Method |\n`;
-  table += `|-------|----------------------|------------|-------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Monte Carlo simulation results
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const meanRevenue = Math.round(baseRevenue * (1 + (0.05 * (i + 1))));
-    const optimisticRevenue = Math.round(meanRevenue * 1.15); // +15% optimistic
-    const pessimisticRevenue = Math.round(meanRevenue * 0.85); // -15% pessimistic
+    // Use real ML predictor with Monte Carlo simulations
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: true, // Enable Monte Carlo scenarios
+      includeExternalFactors: true,
+      monteCarloConfig: {
+        simulations: 1000,
+        confidenceLevels: [0.05, 0.25, 0.5, 0.75, 0.95]
+      }
+    });
     
-    const confidence = Math.max(75, 90 - (i * 1.8));
+    // Format Monte Carlo results with optimistic/pessimistic ranges
+    let table = `| Month | Revenue (Monte Carlo) | Optimistic | Pessimistic | Confidence | Method |\n`;
+    table += `|-------|----------------------|------------|-------------|------------|--------|\n`;
     
-    table += `| ${monthName} | $${meanRevenue.toLocaleString()} | $${optimisticRevenue.toLocaleString()} | $${pessimisticRevenue.toLocaleString()} | ${confidence}% | Monte Carlo (1000 simulations) |\n`;
+    predictions.forEach(prediction => {
+      const date = new Date(prediction.date);
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      const optimistic = prediction.revenueRange?.optimistic || Math.round(prediction.revenue * 1.15);
+      const pessimistic = prediction.revenueRange?.pessimistic || Math.round(prediction.revenue * 0.85);
+      
+      table += `| ${monthName} | $${prediction.revenue.toLocaleString()} | $${optimistic.toLocaleString()} | $${pessimistic.toLocaleString()} | ${prediction.confidence.toFixed(1)}% | Monte Carlo (1000 simulations) |\n`;
+    });
+    
+    return table;
+  } catch (error) {
+    console.error('Error in Monte Carlo forecast:', error);
+    return 'Error generating Monte Carlo forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateScenarioAnalysisForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Optimistic | Realistic | Pessimistic | Confidence | Method |\n`;
-  table += `|-------|------------|-----------|-------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Scenario analysis
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const realisticRevenue = Math.round(baseRevenue * (1 + (0.05 * (i + 1))));
-    const optimisticRevenue = Math.round(realisticRevenue * 1.2); // +20% optimistic
-    const pessimisticRevenue = Math.round(realisticRevenue * 0.8); // -20% pessimistic
+    // Use real ML predictor with scenario analysis
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: true, // Enable scenario analysis
+      includeExternalFactors: true
+    });
     
-    const confidence = Math.max(70, 85 - (i * 1.5));
+    // Format scenario analysis results
+    let table = `| Month | Optimistic | Realistic | Pessimistic | Confidence | Method |\n`;
+    table += `|-------|------------|-----------|-------------|------------|--------|\n`;
     
-    table += `| ${monthName} | $${optimisticRevenue.toLocaleString()} | $${realisticRevenue.toLocaleString()} | $${pessimisticRevenue.toLocaleString()} | ${confidence}% | Scenario Analysis |\n`;
+    predictions.forEach(prediction => {
+      const date = new Date(prediction.date);
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      const optimistic = prediction.scenarios?.optimistic?.revenue || Math.round(prediction.revenue * 1.2);
+      const realistic = prediction.revenue;
+      const pessimistic = prediction.scenarios?.pessimistic?.revenue || Math.round(prediction.revenue * 0.8);
+      
+      table += `| ${monthName} | $${optimistic.toLocaleString()} | $${realistic.toLocaleString()} | $${pessimistic.toLocaleString()} | ${prediction.confidence.toFixed(1)}% | Scenario Analysis |\n`;
+    });
+    
+    return table;
+  } catch (error) {
+    console.error('Error in scenario analysis forecast:', error);
+    return 'Error generating scenario analysis forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateSalesPipelineForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Pipeline Value | Win Probability | Expected Revenue | Confidence | Method |\n`;
-  table += `|-------|---------------|-----------------|------------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Sales pipeline analysis
-    const pipelineValue = Math.round(500000 * (1 + (0.03 * (i + 1)))); // Growing pipeline
-    const winProbability = Math.max(0.4, 0.6 - (i * 0.02)); // Decreasing over time
-    const expectedRevenue = Math.round(pipelineValue * winProbability);
+    // Use real ML predictor for sales pipeline analysis
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: true,
+      externalFactors: {
+        marketData: {
+          industryGrowthRate: 0.12,
+          marketSize: 1000000000,
+          competitiveIndex: 0.7,
+          lastUpdated: new Date().toISOString()
+        }
+      }
+    });
     
-    const confidence = Math.max(65, 80 - (i * 1.2));
+    // Format sales pipeline results
+    let table = `| Month | Pipeline Value | Win Probability | Expected Revenue | Confidence | Method |\n`;
+    table += `|-------|---------------|-----------------|------------------|------------|--------|\n`;
     
-    table += `| ${monthName} | $${pipelineValue.toLocaleString()} | ${(winProbability * 100).toFixed(1)}% | $${expectedRevenue.toLocaleString()} | ${confidence}% | Sales Pipeline Analysis |\n`;
+    predictions.forEach((prediction, index) => {
+      const date = new Date(prediction.date);
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      // Calculate pipeline metrics based on ML predictions
+      const pipelineValue = Math.round(prediction.revenue * 3); // Pipeline is typically 3x expected revenue
+      const winProbability = Math.max(0.4, 0.6 - (index * 0.02)); // Decreasing over time
+      const expectedRevenue = prediction.revenue;
+      
+      table += `| ${monthName} | $${pipelineValue.toLocaleString()} | ${(winProbability * 100).toFixed(1)}% | $${expectedRevenue.toLocaleString()} | ${prediction.confidence.toFixed(1)}% | Sales Pipeline Analysis |\n`;
+    });
+    
+    return table;
+  } catch (error) {
+    console.error('Error in sales pipeline forecast:', error);
+    return 'Error generating sales pipeline forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateTrendsAnalysisForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue Trend | Customer Trend | Growth Rate | Confidence | Method |\n`;
-  table += `|-------|--------------|----------------|-------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Trends analysis
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const trendRevenue = Math.round(baseRevenue * (1 + (0.06 * (i + 1)) + (0.001 * Math.pow(i + 1, 1.5)))); // Accelerating trend
+    // Use real ML predictor for trends analysis
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: true
+    });
     
-    const baseCustomers = inputs.largeCustomers + inputs.smallMediumCustomers;
-    const trendCustomers = Math.round(baseCustomers * (1 + (0.04 * (i + 1)) + (0.0008 * Math.pow(i + 1, 1.3))));
+    // Format trends analysis results
+    let table = `| Month | Revenue Trend | Customer Trend | Growth Rate | Confidence | Method |\n`;
+    table += `|-------|--------------|----------------|-------------|------------|--------|\n`;
     
-    const growthRate = (6 + (i * 0.2)).toFixed(1); // Increasing growth rate
-    const confidence = Math.max(72, 88 - (i * 1.4));
+    predictions.forEach((prediction, index) => {
+      const date = new Date(prediction.date);
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      // Calculate growth rate based on ML predictions
+      const growthRate = index > 0 ? 
+        (((prediction.revenue - predictions[index - 1].revenue) / predictions[index - 1].revenue) * 100).toFixed(1) : 
+        '5.0';
+      
+      table += `| ${monthName} | $${prediction.revenue.toLocaleString()} | ${prediction.customers.toLocaleString()} | ${growthRate}% | ${prediction.confidence.toFixed(1)}% | Trends Analysis |\n`;
+    });
     
-    table += `| ${monthName} | $${trendRevenue.toLocaleString()} | ${trendCustomers} | ${growthRate}% | ${confidence}% | Trends Analysis |\n`;
+    return table;
+  } catch (error) {
+    console.error('Error in trends analysis forecast:', error);
+    return 'Error generating trends analysis forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateProfitabilityAnalysisForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue | Expenses | Net Profit | Margin % | Confidence | Method |\n`;
-  table += `|-------|---------|----------|------------|----------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Profitability analysis
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const revenue = Math.round(baseRevenue * (1 + (0.05 * (i + 1))));
-    const expenses = Math.round((inputs.operatingExpenses || 50000) * (1 + (0.02 * (i + 1)))); // 2% expense growth
-    const netProfit = revenue - expenses;
-    const margin = ((netProfit / revenue) * 100).toFixed(1);
+    // Use real ML predictor for profitability analysis
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: true,
+      cashFlowInputs: {
+        includeCashFlowProjections: true,
+        operatingExpenses: inputs.operatingExpenses || 50000,
+        growthRate: 0.05
+      }
+    });
     
-    const confidence = Math.max(68, 82 - (i * 1.3));
+    // Format profitability analysis results
+    let table = `| Month | Revenue | Expenses | Net Profit | Margin % | Confidence | Method |\n`;
+    table += `|-------|---------|----------|------------|----------|------------|--------|\n`;
     
-    table += `| ${monthName} | $${revenue.toLocaleString()} | $${expenses.toLocaleString()} | $${netProfit.toLocaleString()} | ${margin}% | ${confidence}% | Profitability Analysis |\n`;
+    predictions.forEach((prediction, index) => {
+      const date = new Date(prediction.date);
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      const revenue = prediction.revenue;
+      const expenses = Math.round((inputs.operatingExpenses || 50000) * (1 + (0.02 * (index + 1)))); // 2% expense growth
+      const netProfit = revenue - expenses;
+      const margin = ((netProfit / revenue) * 100).toFixed(1);
+      
+      table += `| ${monthName} | $${revenue.toLocaleString()} | $${expenses.toLocaleString()} | $${netProfit.toLocaleString()} | ${margin}% | ${prediction.confidence.toFixed(1)}% | Profitability Analysis |\n`;
+    });
+    
+    return table;
+  } catch (error) {
+    console.error('Error in profitability analysis forecast:', error);
+    return 'Error generating profitability analysis forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateLinearRegressionForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue (Linear) | Customers (Linear) | Confidence | Method |\n`;
-  table += `|-------|-----------------|-------------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Linear regression calculations
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const linearRevenue = Math.round(baseRevenue * (1 + (0.04 * (i + 1)))); // Linear growth
+    // Use real ML predictor with Linear Regression focus
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: false,
+      modelPreferences: {
+        preferredModels: ['Linear'],
+        ensembleWeights: {
+          linear: 0.8, // Focus on Linear Regression
+          exponential: 0.1,
+          movingAverage: 0.1,
+          arima: 0.0,
+          neuralNetwork: 0.0,
+          lstm: 0.0
+        }
+      }
+    });
     
-    const baseCustomers = inputs.largeCustomers + inputs.smallMediumCustomers;
-    const linearCustomers = Math.round(baseCustomers * (1 + (0.025 * (i + 1))));
-    
-    const confidence = Math.max(70, 85 - (i * 1.5));
-    
-    table += `| ${monthName} | $${linearRevenue.toLocaleString()} | ${linearCustomers} | ${confidence}% | Linear Regression Trend Analysis |\n`;
+    return predictionsToTable(predictions, 'Linear Regression');
+  } catch (error) {
+    console.error('Error in Linear Regression forecast:', error);
+    return 'Error generating Linear Regression forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateExponentialSmoothingForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue (Exp Smooth) | Customers (Exp Smooth) | Confidence | Method |\n`;
-  table += `|-------|---------------------|------------------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Exponential smoothing calculations
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const expRevenue = Math.round(baseRevenue * Math.pow(1.05, i + 1)); // Exponential growth
+    // Use real ML predictor with Exponential Smoothing focus
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: false,
+      modelPreferences: {
+        preferredModels: ['Exponential'],
+        ensembleWeights: {
+          linear: 0.1,
+          exponential: 0.8, // Focus on Exponential Smoothing
+          movingAverage: 0.1,
+          arima: 0.0,
+          neuralNetwork: 0.0,
+          lstm: 0.0
+        }
+      }
+    });
     
-    const baseCustomers = inputs.largeCustomers + inputs.smallMediumCustomers;
-    const expCustomers = Math.round(baseCustomers * Math.pow(1.03, i + 1));
-    
-    const confidence = Math.max(68, 82 - (i * 1.4));
-    
-    table += `| ${monthName} | $${expRevenue.toLocaleString()} | ${expCustomers} | ${confidence}% | Exponential Smoothing |\n`;
+    return predictionsToTable(predictions, 'Exponential Smoothing');
+  } catch (error) {
+    console.error('Error in Exponential Smoothing forecast:', error);
+    return 'Error generating Exponential Smoothing forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function generateMovingAverageForecast(query: string, inputs: FinancialInputs): string {
-  const months = getForecastPeriod(query);
-  const currentDate = new Date();
-  
-  let table = `| Month | Revenue (MA) | Customers (MA) | Confidence | Method |\n`;
-  table += `|-------|-------------|----------------|------------|--------|\n`;
-  
-  for (let i = 0; i < months; i++) {
-    const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-    const monthName = forecastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  try {
+    const months = getForecastPeriod(query);
+    const historicalData = generateHistoricalData(inputs);
     
-    // Moving average calculations (smoothed)
-    const baseRevenue = (inputs.largeCustomers * inputs.revPerLargeCustomer) + (inputs.smallMediumCustomers * inputs.revPerSmallMediumCustomer);
-    const maRevenue = Math.round(baseRevenue * (1 + (0.035 * (i + 1)) + (0.0005 * Math.sin(i * 0.2)))); // Smoothed with noise reduction
+    // Use real ML predictor with Moving Average focus
+    const mlPredictor = new MLPredictor();
+    const predictions = mlPredictor.predict({
+      data: historicalData,
+      timespan: months,
+      predictionType: 'both',
+      includeScenarios: false,
+      includeExternalFactors: false,
+      modelPreferences: {
+        preferredModels: ['MovingAverage'],
+        ensembleWeights: {
+          linear: 0.1,
+          exponential: 0.1,
+          movingAverage: 0.8, // Focus on Moving Average
+          arima: 0.0,
+          neuralNetwork: 0.0,
+          lstm: 0.0
+        }
+      }
+    });
     
-    const baseCustomers = inputs.largeCustomers + inputs.smallMediumCustomers;
-    const maCustomers = Math.round(baseCustomers * (1 + (0.02 * (i + 1)) + (0.0003 * Math.cos(i * 0.15))));
-    
-    const confidence = Math.max(72, 87 - (i * 1.3));
-    
-    table += `| ${monthName} | $${maRevenue.toLocaleString()} | ${maCustomers} | ${confidence}% | Moving Average (Noise Reduction) |\n`;
+    return predictionsToTable(predictions, 'Moving Average');
+  } catch (error) {
+    console.error('Error in Moving Average forecast:', error);
+    return 'Error generating Moving Average forecast. Please try again.';
   }
-  
-  return table;
 }
 
 function getForecastPeriod(query: string): number {
