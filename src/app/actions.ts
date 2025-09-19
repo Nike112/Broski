@@ -231,8 +231,28 @@ Use the knowledge base to provide accurate financial information. Be concise and
       (lowerQuery.includes('scenario') && lowerQuery.includes('analysis')) ||
       (lowerQuery.includes('what if') && lowerQuery.includes('scenario'))
     );
+
+    // EXCLUDE simple definition and calculation questions
+    const isSimpleQuestion = (
+      lowerQuery.includes('what is') ||
+      lowerQuery.includes('what are') ||
+      lowerQuery.includes('define') ||
+      lowerQuery.includes('explain') ||
+      lowerQuery.includes('calculate') ||
+      lowerQuery.includes('our current') ||
+      lowerQuery.includes('our ') ||
+      (lowerQuery.includes('mrr') && !lowerQuery.includes('table')) ||
+      (lowerQuery.includes('arr') && !lowerQuery.includes('table')) ||
+      (lowerQuery.includes('cac') && !lowerQuery.includes('table')) ||
+      (lowerQuery.includes('ltv') && !lowerQuery.includes('table')) ||
+      (lowerQuery.includes('churn') && !lowerQuery.includes('table')) ||
+      (lowerQuery.includes('burn rate') && !lowerQuery.includes('table'))
+    );
+
+    // Only trigger forecast if it's a table request AND not a simple question
+    const shouldShowForecast = isForecastRequest && !isSimpleQuestion;
     
-    if (isForecastRequest) {
+    if (shouldShowForecast) {
       // Generate forecast data with real-time months
       const forecastData = generateForecastData(query, inputs);
       
