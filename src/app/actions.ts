@@ -124,7 +124,7 @@ function generateRevenueForecastTable(query: string, inputs: FinancialInputs): s
   const isCurrentOnly = lowerQuery.includes('current') && !lowerQuery.includes('forecast');
   
   // Determine forecast period
-  let periods = 1;
+  let periods = 6; // Default to 6 months
   if (lowerQuery.includes('3 year') || lowerQuery.includes('36 month')) {
     periods = 36;
   } else if (lowerQuery.includes('2 year') || lowerQuery.includes('24 month')) {
@@ -135,6 +135,9 @@ function generateRevenueForecastTable(query: string, inputs: FinancialInputs): s
     periods = 6;
   } else if (lowerQuery.includes('quarter') || lowerQuery.includes('3 month')) {
     periods = 3;
+  } else if (lowerQuery.includes('forecast') || lowerQuery.includes('projection')) {
+    // If it's a forecast/projection request, default to 12 months
+    periods = 12;
   }
   
   // Calculate current revenue
@@ -157,10 +160,18 @@ function generateRevenueForecastTable(query: string, inputs: FinancialInputs): s
     
     // Apply growth if not current only
     if (!isCurrentOnly && i > 0) {
-      // Assume 5% monthly growth if no growth rate provided
-      const growthRate = 0.05;
-      periodLargeCustomers = Math.round(largeCustomers * Math.pow(1 + growthRate, i));
-      periodSmallCustomers = Math.round(smallCustomers * Math.pow(1 + growthRate, i));
+      // Sales pipeline analysis with win probability
+      const winProbability = lowerQuery.includes('85%') ? 0.85 : 0.7; // Default 70% win rate
+      
+      // Large customers: Sales-led growth (1.5 new customers per sales person per month)
+      const salesPeopleGrowth = Math.floor(i / 3); // Add 1 sales person every 3 months
+      const newLargeCustomers = Math.round(salesPeopleGrowth * 1.5 * winProbability);
+      periodLargeCustomers = largeCustomers + newLargeCustomers;
+      
+      // Small customers: Marketing-led growth (consistent acquisition)
+      const monthlySmallCustomerGrowth = Math.round(72 * winProbability); // 72 new customers per month
+      periodSmallCustomers = smallCustomers + (monthlySmallCustomerGrowth * i);
+      
       periodRevenue = (periodLargeCustomers * arpuLarge) + (periodSmallCustomers * arpuSmall);
     }
     
