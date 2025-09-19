@@ -138,9 +138,10 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
 
 **CRITICAL INSTRUCTIONS:**
 1. ALWAYS use the provided knowledge base for ALL financial questions
-2. For DEFINITIONS: Use the knowledge base formulas and provide detailed explanations
-3. For CALCULATIONS: Use the exact formulas from the knowledge base
-4. For TABLES/COMPARISONS: Say "Check the Forecast tab for detailed data"
+2. Keep responses SHORT and DIRECT - NO explanations
+3. For DEFINITIONS: Just give the definition and formula
+4. For CALCULATIONS: Just show the result
+5. For TABLES/COMPARISONS: Say "Check the Forecast tab for detailed data"
 
 **USER QUERY:** ${contextQuery}
 
@@ -148,29 +149,23 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
 
 **YOUR TASK:**
 1. **DEFINITION QUESTIONS** (What is MRR?, What is CAC?, etc.):
-   - Use the knowledge base to provide comprehensive explanations
-   - Include the exact formula from the knowledge base
-   - Explain what it means for SaaS businesses
-   - Give examples and business context
-   - Be educational and detailed
+   - Give the definition from knowledge base
+   - Include the formula
+   - NO explanations or examples
 
 2. **CALCULATION QUESTIONS** (Calculate our MRR, What's our burn rate, etc.):
    - Use the knowledge base formulas
-   - Show the exact calculation steps
-   - Provide the result with context
-   - Explain what the number means
+   - Show the calculation result
+   - NO explanations
 
 3. **TABLE/COMPARISON QUESTIONS** (Show breakdown, Compare metrics, etc.):
    - Say "Check the Forecast tab for detailed data"
-   - Provide a brief summary in chat
-   - Let the forecast system handle the tables
 
 **RESPONSE FORMAT:**
-- Always reference the knowledge base
-- Use exact formulas provided
-- Be comprehensive for definitions
-- Be precise for calculations
-- Direct to forecast tab for tables
+- Be direct and concise
+- NO explanations or context
+- Just the answer
+- Use knowledge base formulas
 
 Respond now using the knowledge base:`;
 
