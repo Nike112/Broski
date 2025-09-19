@@ -44,8 +44,20 @@ function formatInputsForQuery(inputs: FinancialInputs): string {
 function generateForecastData(query: string, inputs: FinancialInputs | null): string {
   const lowerQuery = query.toLowerCase();
   
-  // Determine forecast period
-  let months = 6; // default
+  // Check if this is a revenue forecasting request
+  const isRevenueForecast = lowerQuery.includes('revenue') && (
+    lowerQuery.includes('forecast') || 
+    lowerQuery.includes('projection') || 
+    lowerQuery.includes('table') ||
+    lowerQuery.includes('breakdown')
+  );
+
+  if (isRevenueForecast && inputs) {
+    return generateRevenueForecastTable(query, inputs);
+  }
+  
+  // Default forecast for other requests
+  let months = 6;
   if (lowerQuery.includes('12 month') || lowerQuery.includes('year') || lowerQuery.includes('annual')) {
     months = 12;
   } else if (lowerQuery.includes('18 month')) {
@@ -94,6 +106,68 @@ function generateForecastData(query: string, inputs: FinancialInputs | null): st
     const netProfit = totalRevenue - operatingExpenses;
     
     forecastTable += `| ${monthName} | ${currentLargeCustomers} | ${currentSmallCustomers} | $${totalRevenue.toLocaleString()} | $${operatingExpenses.toLocaleString()} | $${netProfit.toLocaleString()} |\n`;
+  }
+  
+  return forecastTable;
+}
+
+function generateRevenueForecastTable(query: string, inputs: FinancialInputs): string {
+  const lowerQuery = query.toLowerCase();
+  
+  // Extract parameters from dashboard inputs
+  const largeCustomers = inputs.largeCustomers || 0;
+  const arpuLarge = inputs.revPerLargeCustomer || 0;
+  const smallCustomers = inputs.smallMediumCustomers || 0;
+  const arpuSmall = inputs.revPerSmallMediumCustomer || 0;
+  
+  // Check if user wants current revenue only
+  const isCurrentOnly = lowerQuery.includes('current') && !lowerQuery.includes('forecast');
+  
+  // Determine forecast period
+  let periods = 1;
+  if (lowerQuery.includes('3 year') || lowerQuery.includes('36 month')) {
+    periods = 36;
+  } else if (lowerQuery.includes('2 year') || lowerQuery.includes('24 month')) {
+    periods = 24;
+  } else if (lowerQuery.includes('year') || lowerQuery.includes('12 month')) {
+    periods = 12;
+  } else if (lowerQuery.includes('6 month')) {
+    periods = 6;
+  } else if (lowerQuery.includes('quarter') || lowerQuery.includes('3 month')) {
+    periods = 3;
+  }
+  
+  // Calculate current revenue
+  const currentRevenue = (largeCustomers * arpuLarge) + (smallCustomers * arpuSmall);
+  
+  // Generate forecast table
+  let forecastTable = `| Period | Large Customers | Small Customers | Total Customers | Large Revenue | Small Revenue | Total Revenue |\n`;
+  forecastTable += `|--------|----------------|-----------------|-----------------|---------------|---------------|---------------|\n`;
+  
+  const currentDate = new Date();
+  
+  for (let i = 0; i < periods; i++) {
+    const futureDate = new Date(currentDate);
+    futureDate.setMonth(currentDate.getMonth() + i);
+    const periodName = i === 0 ? 'Current' : futureDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+    
+    let periodRevenue = currentRevenue;
+    let periodLargeCustomers = largeCustomers;
+    let periodSmallCustomers = smallCustomers;
+    
+    // Apply growth if not current only
+    if (!isCurrentOnly && i > 0) {
+      // Assume 5% monthly growth if no growth rate provided
+      const growthRate = 0.05;
+      periodLargeCustomers = Math.round(largeCustomers * Math.pow(1 + growthRate, i));
+      periodSmallCustomers = Math.round(smallCustomers * Math.pow(1 + growthRate, i));
+      periodRevenue = (periodLargeCustomers * arpuLarge) + (periodSmallCustomers * arpuSmall);
+    }
+    
+    const largeRevenue = periodLargeCustomers * arpuLarge;
+    const smallRevenue = periodSmallCustomers * arpuSmall;
+    
+    forecastTable += `| ${periodName} | ${periodLargeCustomers} | ${periodSmallCustomers} | ${periodLargeCustomers + periodSmallCustomers} | $${largeRevenue.toLocaleString()} | $${smallRevenue.toLocaleString()} | $${periodRevenue.toLocaleString()} |\n`;
   }
   
   return forecastTable;
