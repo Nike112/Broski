@@ -220,8 +220,12 @@ Use the knowledge base to provide accurate financial information. Be concise and
       lowerQuery.includes('forecast table') ||
       
       // Projection/forecast with timeframes
-      (lowerQuery.includes('projection') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month'))) ||
-      (lowerQuery.includes('forecast') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month'))) ||
+      (lowerQuery.includes('projection') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month') || lowerQuery.includes('11 month'))) ||
+      (lowerQuery.includes('forecast') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month') || lowerQuery.includes('11 month'))) ||
+      
+      // Revenue forecast requests
+      (lowerQuery.includes('revenue') && lowerQuery.includes('forecast')) ||
+      (lowerQuery.includes('generate') && lowerQuery.includes('forecast')) ||
       
       // Breakdown requests
       lowerQuery.includes('breakdown') ||
