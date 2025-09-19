@@ -134,49 +134,51 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
       lowerQuery.includes('meaning of')
     );
 
-    const prompt = `You are an AI CFO Assistant integrated with a dashboard.
+    const prompt = `You are an AI CFO Assistant with access to a comprehensive financial knowledge base.
 
-**DECISION FRAMEWORK:**
-
-1. **CHAT OUTPUT ONLY** (Single value, short explanation):
-   - Direct facts: "What is our current MRR?"
-   - Single metrics: "How many new customers this quarter?"
-   - Formula applications: "What is our CAC?"
-   - Keep responses SHORT and DIRECT
-   - NO tables, NO verbose explanations
-
-2. **FORECAST SECTION** (Multiple periods, breakdowns):
-   - Projections: "Show MRR forecast for next 6 months"
-   - Comparisons: "Compare large vs small customers for 12 months"
-   - Breakdowns: "Give churn projections for next 3 quarters"
-   - Return structured data for dashboard
+**CRITICAL INSTRUCTIONS:**
+1. ALWAYS use the provided knowledge base for ALL financial questions
+2. For DEFINITIONS: Use the knowledge base formulas and provide detailed explanations
+3. For CALCULATIONS: Use the exact formulas from the knowledge base
+4. For TABLES/COMPARISONS: Say "Check the Forecast tab for detailed data"
 
 **USER QUERY:** ${contextQuery}
 
-**FINANCIAL FORMULAS KNOWLEDGE BASE:** ${JSON.stringify(formulas, null, 2)}
+**FINANCIAL KNOWLEDGE BASE:** ${JSON.stringify(formulas, null, 2)}
 
 **YOUR TASK:**
-1. Determine if this needs a simple chat answer OR forecast data
-2. For DEFINITIONS: Provide clear, helpful explanations with examples and why it matters for SaaS businesses
-3. For CALCULATIONS: Show the math and give the result
-4. For FORECASTS: Say "Check the Forecast tab for detailed projections"
-5. Use the knowledge base for accurate calculations
+1. **DEFINITION QUESTIONS** (What is MRR?, What is CAC?, etc.):
+   - Use the knowledge base to provide comprehensive explanations
+   - Include the exact formula from the knowledge base
+   - Explain what it means for SaaS businesses
+   - Give examples and business context
+   - Be educational and detailed
+
+2. **CALCULATION QUESTIONS** (Calculate our MRR, What's our burn rate, etc.):
+   - Use the knowledge base formulas
+   - Show the exact calculation steps
+   - Provide the result with context
+   - Explain what the number means
+
+3. **TABLE/COMPARISON QUESTIONS** (Show breakdown, Compare metrics, etc.):
+   - Say "Check the Forecast tab for detailed data"
+   - Provide a brief summary in chat
+   - Let the forecast system handle the tables
 
 **RESPONSE FORMAT:**
-- Definition questions → Clear explanations with examples, formulas, and business context
-- Calculation questions → Show formula, do the math, give result
-- Forecast questions → "Check the Forecast tab for detailed projections"
-- Be helpful and educational, especially for definitions
-- Use actual calculations from the knowledge base
+- Always reference the knowledge base
+- Use exact formulas provided
+- Be comprehensive for definitions
+- Be precise for calculations
+- Direct to forecast tab for tables
 
-Respond now:`;
+Respond now using the knowledge base:`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
     // Check if this is a forecast request that needs structured data
-    const lowerQuery = query.toLowerCase();
     const isForecastRequest = (
       // Explicit forecast/projection requests
       (lowerQuery.includes('forecast') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show') || lowerQuery.includes('next'))) ||
@@ -193,12 +195,19 @@ Respond now:`;
       (lowerQuery.includes('scenario') && (lowerQuery.includes('optimistic') || lowerQuery.includes('pessimistic') || lowerQuery.includes('realistic') || lowerQuery.includes('with'))) ||
       (lowerQuery.includes('show scenario')) ||
       
+      // Table and comparison requests
+      lowerQuery.includes('breakdown') ||
+      lowerQuery.includes('table') ||
+      lowerQuery.includes('compare') ||
+      lowerQuery.includes('vs') ||
+      lowerQuery.includes('versus') ||
+      lowerQuery.includes('analysis') ||
+      lowerQuery.includes('detailed') ||
+      
       // Specific forecast types
       lowerQuery.includes('quarterly forecast') ||
       lowerQuery.includes('annual forecast') ||
       lowerQuery.includes('month by month') ||
-      lowerQuery.includes('breakdown') ||
-      lowerQuery.includes('table') ||
       
       // Time-based analysis
       lowerQuery.includes('monthly') ||
