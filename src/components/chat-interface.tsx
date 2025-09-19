@@ -23,6 +23,69 @@ type ChatInterfaceProps = {
   onSwitchToVoice?: () => void;
 };
 
+// Helper function to detect if response contains table-like content
+function containsTableContent(response: string): boolean {
+  const lowerResponse = response.toLowerCase();
+  
+  // Check for table indicators
+  const tableIndicators = [
+    'table', 'breakdown', 'month by month', 'projection', 'forecast',
+    'detailed', 'analysis', 'revenue', 'customers', 'growth',
+    'mrr', 'arr', 'cac', 'ltv', 'burn rate'
+  ];
+  
+  const hasTableIndicators = tableIndicators.some(indicator => 
+    lowerResponse.includes(indicator)
+  );
+  
+  // Check for numerical data patterns
+  const hasNumericalData = /\$\d+|\d+%|\d+ customers|\d+ months|\d+\.\d+/.test(response);
+  
+  // Check for structured data patterns
+  const hasStructuredData = /- \w+:|• \w+:|:\s*\$\d+/.test(response);
+  
+  return hasTableIndicators && (hasNumericalData || hasStructuredData);
+}
+
+// Helper function to generate a table from response content
+function generateTableFromResponse(response: string, inputs: any): string {
+  // Extract key metrics from the response
+  const mrrMatch = response.match(/\$([\d,]+)/);
+  const customersMatch = response.match(/(\d+)\s*(?:large|small|medium)?\s*customers/i);
+  const revenueMatch = response.match(/revenue[:\s]*\$([\d,]+)/i);
+  
+  // Create a simple summary table
+  let table = `| Metric | Value |\n`;
+  table += `|--------|-------|\n`;
+  
+  if (mrrMatch) {
+    table += `| MRR | $${mrrMatch[1]} |\n`;
+  }
+  
+  if (customersMatch) {
+    table += `| Customers | ${customersMatch[1]} |\n`;
+  }
+  
+  if (revenueMatch) {
+    table += `| Revenue | $${revenueMatch[1]} |\n`;
+  }
+  
+  // Add input data if available
+  if (inputs) {
+    if (inputs.largeCustomers) {
+      table += `| Large Customers | ${inputs.largeCustomers} |\n`;
+    }
+    if (inputs.smallMediumCustomers) {
+      table += `| SMB Customers | ${inputs.smallMediumCustomers} |\n`;
+    }
+    if (inputs.operatingExpenses) {
+      table += `| Operating Expenses | $${inputs.operatingExpenses.toLocaleString()} |\n`;
+    }
+  }
+  
+  return table;
+}
+
 
 export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated, onSwitchToVoice }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
@@ -139,6 +202,17 @@ export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated, o
            // Automatically update forecast if this is a forecast response
            if (response.responseType === 'forecast') {
              onForecastGenerated(response);
+           }
+           
+           // Also check if the response contains table-like content and trigger forecast update
+           if (response.responseType === 'answer' && containsTableContent(response.explanation)) {
+             // Convert the answer response to a forecast response for the forecast tab
+             const forecastResponse = {
+               responseType: 'forecast' as const,
+               explanation: response.explanation,
+               forecast: generateTableFromResponse(response.explanation, inputs)
+             };
+             onForecastGenerated(forecastResponse);
            }
         }
       });
