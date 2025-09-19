@@ -125,6 +125,7 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
     }
 
     // Check if this is a definition question (not asking for current values)
+    const lowerQuery = query.toLowerCase();
     const isDefinitionQuestion = (
       (lowerQuery.includes('what is') && !lowerQuery.includes('our current') && !lowerQuery.includes('our ')) ||
       (lowerQuery.includes('what are') && !lowerQuery.includes('our current') && !lowerQuery.includes('our ')) ||
