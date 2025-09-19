@@ -49,6 +49,38 @@ function parseForecastData(forecast: string) {
 function MLPredictionTable({ predictions }: { predictions: PredictionResult[] }) {
   if (predictions.length === 0) return null;
 
+  const handleMLDownload = () => {
+    // Create CSV content for ML predictions
+    const headers = ['Date', 'Revenue (Optimistic)', 'Revenue (Predicted)', 'Revenue (Pessimistic)', 'Customers (Optimistic)', 'Customers (Predicted)', 'Customers (Pessimistic)', 'Confidence (%)', 'Method'];
+    const csvRows = [headers.join(',')];
+    
+    predictions.forEach(prediction => {
+      const row = [
+        new Date(prediction.date).toLocaleDateString(),
+        prediction.revenueRange?.optimistic || prediction.revenue,
+        prediction.revenue,
+        prediction.revenueRange?.pessimistic || prediction.revenue,
+        prediction.customerRange?.optimistic || prediction.customers,
+        prediction.customers,
+        prediction.customerRange?.pessimistic || prediction.customers,
+        prediction.confidence.toFixed(1),
+        `"${prediction.method}"` // Wrap in quotes to handle commas in method name
+      ];
+      csvRows.push(row.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'ml_predictions.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       {/* Enhanced Prediction Table */}
