@@ -124,6 +124,15 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
       contextQuery = `${query}\n\n${businessContext}`;
     }
 
+    // Check if this is a definition question (not asking for current values)
+    const isDefinitionQuestion = (
+      (lowerQuery.includes('what is') && !lowerQuery.includes('our current') && !lowerQuery.includes('our ')) ||
+      (lowerQuery.includes('what are') && !lowerQuery.includes('our current') && !lowerQuery.includes('our ')) ||
+      lowerQuery.includes('define') ||
+      lowerQuery.includes('explain') ||
+      lowerQuery.includes('meaning of')
+    );
+
     const prompt = `You are an AI CFO Assistant integrated with a dashboard.
 
 **DECISION FRAMEWORK:**
@@ -147,14 +156,16 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
 
 **YOUR TASK:**
 1. Determine if this needs a simple chat answer OR forecast data
-2. For simple answers: Be direct and concise
-3. For forecasts: Say "Check the Forecast tab for detailed projections"
-4. Use the knowledge base for accurate calculations
+2. For DEFINITIONS: Provide clear, helpful explanations with examples and why it matters for SaaS businesses
+3. For CALCULATIONS: Show the math and give the result
+4. For FORECASTS: Say "Check the Forecast tab for detailed projections"
+5. Use the knowledge base for accurate calculations
 
 **RESPONSE FORMAT:**
-- Simple questions → Short, direct answers
+- Definition questions → Clear explanations with examples, formulas, and business context
+- Calculation questions → Show formula, do the math, give result
 - Forecast questions → "Check the Forecast tab for detailed projections"
-- Be helpful but concise
+- Be helpful and educational, especially for definitions
 - Use actual calculations from the knowledge base
 
 Respond now:`;
