@@ -166,23 +166,32 @@ Respond now:`;
     // Check if this is a forecast request that needs structured data
     const lowerQuery = query.toLowerCase();
     const isForecastRequest = (
-      // Multiple time periods or breakdowns
-      (lowerQuery.includes('forecast') && (lowerQuery.includes('next') || lowerQuery.includes('for the next'))) ||
-      (lowerQuery.includes('projection') && (lowerQuery.includes('next') || lowerQuery.includes('for the next'))) ||
-      (lowerQuery.includes('compare') && (lowerQuery.includes('vs') || lowerQuery.includes('versus'))) ||
-      (lowerQuery.includes('breakdown') || lowerQuery.includes('by segment') || lowerQuery.includes('by customer')) ||
+      // Explicit forecast/projection requests
+      (lowerQuery.includes('forecast') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show') || lowerQuery.includes('next'))) ||
+      (lowerQuery.includes('projection') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show') || lowerQuery.includes('next'))) ||
+      (lowerQuery.includes('predict') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show'))) ||
       
-      // Specific time horizons
-      (lowerQuery.includes('next') && (lowerQuery.includes('6 months') || lowerQuery.includes('12 months') || lowerQuery.includes('quarters'))) ||
-      (lowerQuery.includes('monthly') || lowerQuery.includes('quarterly') || lowerQuery.includes('yearly')) ||
+      // Specific time period requests
+      (lowerQuery.includes('month') && (lowerQuery.includes('6') || lowerQuery.includes('12') || lowerQuery.includes('18') || lowerQuery.includes('24'))) ||
+      (lowerQuery.includes('year') && (lowerQuery.includes('1') || lowerQuery.includes('2'))) ||
+      (lowerQuery.includes('quarter') && (lowerQuery.includes('3') || lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
       
-      // Scenario analysis with time periods
-      (lowerQuery.includes('what if') && (lowerQuery.includes('next') || lowerQuery.includes('over'))) ||
-      (lowerQuery.includes('scenario') && (lowerQuery.includes('next') || lowerQuery.includes('over'))) ||
+      // Scenario analysis requests
+      (lowerQuery.includes('what if') && (lowerQuery.includes('double') || lowerQuery.includes('reduce') || lowerQuery.includes('increase') || lowerQuery.includes('next'))) ||
+      (lowerQuery.includes('scenario') && (lowerQuery.includes('optimistic') || lowerQuery.includes('pessimistic') || lowerQuery.includes('realistic') || lowerQuery.includes('with'))) ||
+      (lowerQuery.includes('show scenario')) ||
       
-      // Explicit multi-period requests
+      // Specific forecast types
+      lowerQuery.includes('quarterly forecast') ||
+      lowerQuery.includes('annual forecast') ||
       lowerQuery.includes('month by month') ||
-      lowerQuery.includes('quarter by quarter') ||
+      lowerQuery.includes('breakdown') ||
+      lowerQuery.includes('table') ||
+      
+      // Time-based analysis
+      lowerQuery.includes('monthly') ||
+      lowerQuery.includes('quarterly') ||
+      lowerQuery.includes('yearly') ||
       lowerQuery.includes('over time') ||
       lowerQuery.includes('trend analysis')
     );
