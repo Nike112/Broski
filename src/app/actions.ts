@@ -157,20 +157,26 @@ Respond now:`;
     // Check if this is a forecast request that needs a table
     const lowerQuery = query.toLowerCase();
     const isForecastRequest = (
-      lowerQuery.includes('forecast') || 
-      lowerQuery.includes('projection') || 
-      lowerQuery.includes('predict') ||
-      lowerQuery.includes('scenario') ||
-      lowerQuery.includes('model') ||
-      lowerQuery.includes('breakdown') ||
-      lowerQuery.includes('table') ||
-      lowerQuery.includes('month by month') ||
-      lowerQuery.includes('quarterly') ||
-      lowerQuery.includes('annual') ||
-      lowerQuery.includes('what if') ||
-      lowerQuery.includes('if we') ||
+      // Explicit forecast/projection requests
+      (lowerQuery.includes('forecast') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show'))) ||
+      (lowerQuery.includes('projection') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show'))) ||
+      (lowerQuery.includes('predict') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show'))) ||
+      
+      // Specific time period requests
       (lowerQuery.includes('month') && (lowerQuery.includes('6') || lowerQuery.includes('12') || lowerQuery.includes('18') || lowerQuery.includes('24'))) ||
-      (lowerQuery.includes('year') && (lowerQuery.includes('1') || lowerQuery.includes('2')))
+      (lowerQuery.includes('year') && (lowerQuery.includes('1') || lowerQuery.includes('2'))) ||
+      
+      // Scenario analysis requests
+      (lowerQuery.includes('what if') && (lowerQuery.includes('double') || lowerQuery.includes('reduce') || lowerQuery.includes('increase'))) ||
+      (lowerQuery.includes('scenario') && (lowerQuery.includes('optimistic') || lowerQuery.includes('pessimistic') || lowerQuery.includes('realistic') || lowerQuery.includes('with'))) ||
+      (lowerQuery.includes('show scenario')) ||
+      
+      // Specific forecast types
+      lowerQuery.includes('quarterly forecast') ||
+      lowerQuery.includes('annual forecast') ||
+      lowerQuery.includes('month by month') ||
+      lowerQuery.includes('breakdown') ||
+      lowerQuery.includes('table')
     );
     
     if (isForecastRequest) {
