@@ -27,18 +27,18 @@ async function loadFinancialFormulas() {
 function formatInputsForQuery(inputs: FinancialInputs): string {
   let parts: string[] = [];
 
-  if (inputs.largeCustomers) parts.push(`${inputs.largeCustomers} large customers`);
-  if (inputs.revPerLargeCustomer) parts.push(`with large customer revenue at $${inputs.revPerLargeCustomer}/mo`);
-  if (inputs.smallMediumCustomers) parts.push(`${inputs.smallMediumCustomers} small/medium customers`);
-  if (inputs.revPerSmallMediumCustomer) parts.push(`with S/M customer revenue at $${inputs.revPerSmallMediumCustomer}/mo`);
-  if (inputs.operatingExpenses) parts.push(`operating expenses of $${inputs.operatingExpenses}/mo`);
-  if (inputs.cashInBank) parts.push(`cash in bank of $${inputs.cashInBank}`);
-  if (inputs.cac) parts.push(`a CAC of $${inputs.cac}`);
+  if (inputs.largeCustomers) parts.push(`LargeCustomers: ${inputs.largeCustomers}`);
+  if (inputs.revPerLargeCustomer) parts.push(`ARPULarge: $${inputs.revPerLargeCustomer}/mo`);
+  if (inputs.smallMediumCustomers) parts.push(`SmallCustomers: ${inputs.smallMediumCustomers}`);
+  if (inputs.revPerSmallMediumCustomer) parts.push(`ARPUSmall: $${inputs.revPerSmallMediumCustomer}/mo`);
+  if (inputs.operatingExpenses) parts.push(`OperatingExpenses: $${inputs.operatingExpenses}/mo`);
+  if (inputs.cashInBank) parts.push(`CashInBank: $${inputs.cashInBank}`);
+  if (inputs.cac) parts.push(`CAC: $${inputs.cac}`);
 
   if (parts.length === 0) return '';
   
   const joinedParts = parts.join(', ');
-  return `Calculate revenue based on these parameters: ${joinedParts}.`;
+  return `Business Data: ${joinedParts}`;
 }
 
 function generateForecastData(query: string, inputs: FinancialInputs | null): string {
@@ -138,19 +138,23 @@ Use the knowledge base to provide accurate financial information. Be concise and
     const response = await result.response;
     const text = response.text();
 
-    // Check if this is a forecast request that needs structured data
+    // Check if this is a forecast request that needs structured data (HUGE TABLES ONLY)
     const isForecastRequest = (
-      lowerQuery.includes('forecast') ||
-      lowerQuery.includes('projection') ||
-      lowerQuery.includes('predict') ||
-      lowerQuery.includes('scenario') ||
-      lowerQuery.includes('what if') ||
-      lowerQuery.includes('breakdown') ||
-      lowerQuery.includes('table') ||
-      lowerQuery.includes('compare') ||
-      lowerQuery.includes('monthly') ||
-      lowerQuery.includes('quarterly') ||
-      lowerQuery.includes('yearly')
+      // Explicit table requests
+      (lowerQuery.includes('table') && (lowerQuery.includes('show') || lowerQuery.includes('generate') || lowerQuery.includes('create'))) ||
+      (lowerQuery.includes('breakdown') && (lowerQuery.includes('monthly') || lowerQuery.includes('quarterly') || lowerQuery.includes('yearly'))) ||
+      
+      // Multi-period forecasts
+      (lowerQuery.includes('forecast') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month') || lowerQuery.includes('year'))) ||
+      (lowerQuery.includes('projection') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month') || lowerQuery.includes('year'))) ||
+      
+      // Scenario analysis with tables
+      (lowerQuery.includes('what if') && (lowerQuery.includes('scenario') || lowerQuery.includes('analysis'))) ||
+      (lowerQuery.includes('scenario') && (lowerQuery.includes('optimistic') || lowerQuery.includes('pessimistic') || lowerQuery.includes('realistic'))) ||
+      
+      // Comparison tables
+      (lowerQuery.includes('compare') && (lowerQuery.includes('month') || lowerQuery.includes('quarter') || lowerQuery.includes('year'))) ||
+      (lowerQuery.includes('vs') && (lowerQuery.includes('month') || lowerQuery.includes('quarter') || lowerQuery.includes('year')))
     );
     
     if (isForecastRequest) {
