@@ -94,17 +94,18 @@ function generateEnsembleMLForecast(query: string, inputs: FinancialInputs): str
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor for ensemble predictions
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: true,
       includeExternalFactors: true,
       cashFlowInputs: {
-        includeCashFlowProjections: true,
+        cashInBank: 1000000, // Default cash in bank
         operatingExpenses: inputs.operatingExpenses || 50000,
-        growthRate: 0.05
+        operatingExpenseGrowthRate: 0.02, // 2% monthly growth
+        grossMarginRate: 0.70, // 70% gross margin
+        includeCashFlowProjections: true
       }
     });
     
@@ -121,24 +122,12 @@ function generateARIMAForecast(query: string, inputs: FinancialInputs): string {
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor with ARIMA focus
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: false,
-      includeExternalFactors: false,
-      modelPreferences: {
-        preferredModels: ['ARIMA'],
-        ensembleWeights: {
-          linear: 0.1,
-          exponential: 0.1,
-          movingAverage: 0.1,
-          arima: 0.7, // Focus on ARIMA
-          neuralNetwork: 0.0,
-          lstm: 0.0
-        }
-      }
+      includeExternalFactors: false
     });
     
     return predictionsToTable(predictions, 'ARIMA');
@@ -154,24 +143,12 @@ function generateNeuralNetworkForecast(query: string, inputs: FinancialInputs): 
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor with Neural Network focus
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: false,
-      includeExternalFactors: false,
-      modelPreferences: {
-        preferredModels: ['NeuralNetwork'],
-        ensembleWeights: {
-          linear: 0.1,
-          exponential: 0.1,
-          movingAverage: 0.1,
-          arima: 0.1,
-          neuralNetwork: 0.6, // Focus on Neural Networks
-          lstm: 0.0
-        }
-      }
+      includeExternalFactors: false
     });
     
     return predictionsToTable(predictions, 'Neural Network');
@@ -187,24 +164,12 @@ function generateLSTMForecast(query: string, inputs: FinancialInputs): string {
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor with LSTM focus
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: false,
-      includeExternalFactors: false,
-      modelPreferences: {
-        preferredModels: ['LSTM'],
-        ensembleWeights: {
-          linear: 0.1,
-          exponential: 0.1,
-          movingAverage: 0.1,
-          arima: 0.1,
-          neuralNetwork: 0.1,
-          lstm: 0.6 // Focus on LSTM
-        }
-      }
+      includeExternalFactors: false
     });
     
     return predictionsToTable(predictions, 'LSTM');
@@ -220,17 +185,12 @@ function generateMonteCarloForecast(query: string, inputs: FinancialInputs): str
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor with Monte Carlo simulations
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: true, // Enable Monte Carlo scenarios
-      includeExternalFactors: true,
-      monteCarloConfig: {
-        simulations: 1000,
-        confidenceLevels: [0.05, 0.25, 0.5, 0.75, 0.95]
-      }
+      includeExternalFactors: true
     });
     
     // Format Monte Carlo results with optimistic/pessimistic ranges
@@ -260,8 +220,7 @@ function generateScenarioAnalysisForecast(query: string, inputs: FinancialInputs
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor with scenario analysis
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
@@ -297,20 +256,17 @@ function generateSalesPipelineForecast(query: string, inputs: FinancialInputs): 
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor for sales pipeline analysis
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: false,
       includeExternalFactors: true,
       externalFactors: {
-        marketData: {
-          industryGrowthRate: 0.12,
-          marketSize: 1000000000,
-          competitiveIndex: 0.7,
-          lastUpdated: new Date().toISOString()
-        }
+        marketGrowth: 0.12, // 12% industry growth rate
+        economicIndex: 0.8, // Good economic conditions
+        competitivePressure: 0.7, // High competition
+        seasonality: [1.0, 0.9, 1.1, 1.0, 1.0, 1.0, 0.8, 0.9, 1.2, 1.1, 1.0, 1.3] // Monthly seasonality
       }
     });
     
@@ -343,8 +299,7 @@ function generateTrendsAnalysisForecast(query: string, inputs: FinancialInputs):
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor for trends analysis
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
@@ -381,17 +336,18 @@ function generateProfitabilityAnalysisForecast(query: string, inputs: FinancialI
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor for profitability analysis
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: false,
       includeExternalFactors: true,
       cashFlowInputs: {
-        includeCashFlowProjections: true,
+        cashInBank: 1000000, // Default cash in bank
         operatingExpenses: inputs.operatingExpenses || 50000,
-        growthRate: 0.05
+        operatingExpenseGrowthRate: 0.02, // 2% monthly growth
+        grossMarginRate: 0.70, // 70% gross margin
+        includeCashFlowProjections: true
       }
     });
     
@@ -424,24 +380,12 @@ function generateLinearRegressionForecast(query: string, inputs: FinancialInputs
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor with Linear Regression focus
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: false,
-      includeExternalFactors: false,
-      modelPreferences: {
-        preferredModels: ['Linear'],
-        ensembleWeights: {
-          linear: 0.8, // Focus on Linear Regression
-          exponential: 0.1,
-          movingAverage: 0.1,
-          arima: 0.0,
-          neuralNetwork: 0.0,
-          lstm: 0.0
-        }
-      }
+      includeExternalFactors: false
     });
     
     return predictionsToTable(predictions, 'Linear Regression');
@@ -457,24 +401,12 @@ function generateExponentialSmoothingForecast(query: string, inputs: FinancialIn
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor with Exponential Smoothing focus
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: false,
-      includeExternalFactors: false,
-      modelPreferences: {
-        preferredModels: ['Exponential'],
-        ensembleWeights: {
-          linear: 0.1,
-          exponential: 0.8, // Focus on Exponential Smoothing
-          movingAverage: 0.1,
-          arima: 0.0,
-          neuralNetwork: 0.0,
-          lstm: 0.0
-        }
-      }
+      includeExternalFactors: false
     });
     
     return predictionsToTable(predictions, 'Exponential Smoothing');
@@ -490,24 +422,12 @@ function generateMovingAverageForecast(query: string, inputs: FinancialInputs): 
     const historicalData = generateHistoricalData(inputs);
     
     // Use real ML predictor with Moving Average focus
-    const mlPredictor = new MLPredictor();
-    const predictions = mlPredictor.predict({
+    const predictions = MLPredictor.predict({
       data: historicalData,
       timespan: months,
       predictionType: 'both',
       includeScenarios: false,
-      includeExternalFactors: false,
-      modelPreferences: {
-        preferredModels: ['MovingAverage'],
-        ensembleWeights: {
-          linear: 0.1,
-          exponential: 0.1,
-          movingAverage: 0.8, // Focus on Moving Average
-          arima: 0.0,
-          neuralNetwork: 0.0,
-          lstm: 0.0
-        }
-      }
+      includeExternalFactors: false
     });
     
     return predictionsToTable(predictions, 'Moving Average');
