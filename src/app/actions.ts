@@ -212,8 +212,8 @@ Use the knowledge base to provide accurate financial information. Be concise and
     const response = await result.response;
     const text = response.text();
 
-    // ONLY show forecast for explicit table generation requests
-    const shouldShowForecast = (
+    // Check if this would generate a huge table (but don't auto-switch)
+    const wouldGenerateTable = (
       // Must have BOTH action word AND table keyword
       (lowerQuery.includes('generate') && lowerQuery.includes('table')) ||
       (lowerQuery.includes('create') && lowerQuery.includes('table')) ||
@@ -227,21 +227,24 @@ Use the knowledge base to provide accurate financial information. Be concise and
       (lowerQuery.includes('monthly') && lowerQuery.includes('breakdown')) ||
       (lowerQuery.includes('quarterly') && lowerQuery.includes('breakdown'))
     );
-    
-    if (shouldShowForecast) {
-      // Generate forecast data with real-time months
+
+    // Always return chat response, but include table data if available
+    if (wouldGenerateTable) {
+      // Generate forecast data but don't auto-switch
       const forecastData = generateForecastData(query, inputs);
       
       return {
-        responseType: 'forecast',
+        responseType: 'answer',
         explanation: text,
-        forecast: forecastData
+        forecast: forecastData,
+        hasTable: true
       };
     }
 
     return {
       responseType: 'answer',
       explanation: text,
+      hasTable: false
     };
 
   } catch (error) {

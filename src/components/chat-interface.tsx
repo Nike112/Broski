@@ -92,6 +92,7 @@ export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated, o
   const [isPending, startTransition] = useTransition();
   const [parsedData, setParsedData] = useState<ParsedExcelData | null>(null);
   const [mlPredictions, setMlPredictions] = useState<PredictionResult[]>([]);
+  const [pendingForecastData, setPendingForecastData] = useState<AutomateFinancialForecastingOutput | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { inputs, messages, addMessage, clearMessages, removeMessage, updateMessage } = useFinancialStore();
 
@@ -199,31 +200,36 @@ export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated, o
            
            addMessage(assistantResponseMessage);
            
-           // Automatically update forecast if this is a forecast response
+           // Check if response has table data and show button instead of auto-switching
            if (response.responseType === 'forecast') {
              onForecastGenerated(response);
-           }
-           
-           // Also check if the response contains table-like content and trigger forecast update
-           if (response.responseType === 'answer' && containsTableContent(response.explanation)) {
-             // Convert the answer response to a forecast response for the forecast tab
+           } else if (response.hasTable && response.forecast) {
+             // Don't auto-switch, just store the table data for the button
              const forecastResponse = {
                responseType: 'forecast' as const,
                explanation: response.explanation,
-               forecast: generateTableFromResponse(response.explanation, inputs)
+               forecast: response.forecast
              };
-             onForecastGenerated(forecastResponse);
+             // Store for button click
+             setPendingForecastData(forecastResponse);
            }
         }
       });
     });
   };
 
+  const handleNavigateToForecast = () => {
+    if (pendingForecastData) {
+      onForecastGenerated(pendingForecastData);
+      setPendingForecastData(null);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-xl font-semibold">EVE - AI Assistant</h2>
-        <Button variant="outline" size="sm" onClick={clearMessages} disabled={messages.length === 0}>
+        <Button variant="outline" size="sm" onClick={() => { clearMessages(); setPendingForecastData(null); }} disabled={messages.length === 0}>
           <Trash2 className="w-4 h-4 mr-2" />
           Clear Chat
         </Button>
@@ -305,6 +311,30 @@ export function ChatInterface({ onForecastGenerated, onMlPredictionsGenerated, o
             </div>
           </ScrollArea>
           <div className="p-4 bg-card border-t">
+            {/* Show button when there's pending forecast data */}
+            {pendingForecastData && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <PieChart className="w-5 h-5 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">
+                      Large table data available
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleNavigateToForecast}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    View in Forecast Tab
+                  </Button>
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  Click to see the detailed table and charts
+                </p>
+              </div>
+            )}
+            
             <div className="flex gap-2 mb-2">
               {onSwitchToVoice && (
                 <Button
