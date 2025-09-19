@@ -211,13 +211,26 @@ export async function getFinancialForecast(query: string, inputs: FinancialInput
 
     const lowerQuery = query.toLowerCase();
 
-    const prompt = `You are an AI CFO Assistant. Answer the user's financial question concisely.
+    const prompt = `You are an AI CFO Assistant with comprehensive financial expertise. Use the knowledge base to answer ALL financial questions accurately.
 
 **USER QUERY:** ${contextQuery}
 
 **FINANCIAL KNOWLEDGE BASE:** ${JSON.stringify(formulas, null, 2)}
 
-Use the knowledge base to provide accurate financial information. Be concise and direct.`;
+**INSTRUCTIONS:**
+1. ALWAYS use the knowledge base for financial definitions and calculations
+2. For definitions: Provide the exact definition and formula from the knowledge base
+3. For calculations: Use the exact formulas and show the calculation steps
+4. For complex analysis: Reference the appropriate formulas and methodologies
+5. Be comprehensive but concise
+
+**RESPONSE REQUIREMENTS:**
+- Use exact formulas from the knowledge base
+- Include relevant keywords and calculations
+- Provide business context when appropriate
+- Reference specific metrics and methodologies
+
+Answer the user's question using the knowledge base:`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -241,7 +254,25 @@ Use the knowledge base to provide accurate financial information. Be concise and
       // Breakdown requests
       lowerQuery.includes('breakdown') ||
       (lowerQuery.includes('monthly') && lowerQuery.includes('breakdown')) ||
-      (lowerQuery.includes('quarterly') && lowerQuery.includes('breakdown'))
+      (lowerQuery.includes('quarterly') && lowerQuery.includes('breakdown')) ||
+      
+      // Scenario analysis
+      lowerQuery.includes('scenario') ||
+      lowerQuery.includes('what if') ||
+      lowerQuery.includes('analysis') ||
+      
+      // Sales pipeline
+      lowerQuery.includes('pipeline') ||
+      lowerQuery.includes('sales pipeline') ||
+      
+      // Trends and acquisition
+      lowerQuery.includes('trends') ||
+      lowerQuery.includes('acquisition trends') ||
+      
+      // Profitability and unit economics
+      lowerQuery.includes('profitability') ||
+      lowerQuery.includes('unit economics') ||
+      lowerQuery.includes('economics')
     );
 
     // Always return chat response, but include table data if available
