@@ -56,19 +56,27 @@ function generateForecastData(query: string, inputs: FinancialInputs | null): st
     return generateRevenueForecastTable(query, inputs);
   }
   
-  // Default forecast for other requests
+  // Default forecast for other requests - use same logic as revenue forecast
   let months = 6;
-  if (lowerQuery.includes('12 month') || lowerQuery.includes('year') || lowerQuery.includes('annual')) {
-    months = 12;
-  } else if (lowerQuery.includes('18 month')) {
-    months = 18;
-  } else if (lowerQuery.includes('24 month') || lowerQuery.includes('2 year')) {
+  if (lowerQuery.includes('36 month') || lowerQuery.includes('3 year')) {
+    months = 36;
+  } else if (lowerQuery.includes('24 month') || lowerQuery.includes('2 year') || lowerQuery.includes('24-month')) {
     months = 24;
-  } else if (lowerQuery.includes('3 month') || lowerQuery.includes('quarter')) {
-    months = 3;
+  } else if (lowerQuery.includes('18 month') || lowerQuery.includes('1.5 year')) {
+    months = 18;
+  } else if (lowerQuery.includes('12 month') || (lowerQuery.includes('year') && !lowerQuery.includes('2 year') && !lowerQuery.includes('3 year'))) {
+    months = 12;
   } else if (lowerQuery.includes('9 month')) {
     months = 9;
+  } else if (lowerQuery.includes('6 month')) {
+    months = 6;
+  } else if (lowerQuery.includes('quarter') || lowerQuery.includes('3 month')) {
+    months = 3;
+  } else if (lowerQuery.includes('forecast') || lowerQuery.includes('projection')) {
+    months = 12;
   }
+  
+  console.log(`Default forecast period detected: ${months} months for query: "${query}"`);
   
   // Get business data
   const largeCustomers = inputs?.largeCustomers || 0;
@@ -123,22 +131,31 @@ function generateRevenueForecastTable(query: string, inputs: FinancialInputs): s
   // Check if user wants current revenue only
   const isCurrentOnly = lowerQuery.includes('current') && !lowerQuery.includes('forecast');
   
-  // Determine forecast period
+  // Determine forecast period - be more specific about timeframe detection
   let periods = 6; // Default to 6 months
-  if (lowerQuery.includes('3 year') || lowerQuery.includes('36 month')) {
+  
+  // Check for specific time periods first - be more aggressive with detection
+  if (lowerQuery.includes('36 month') || lowerQuery.includes('3 year')) {
     periods = 36;
-  } else if (lowerQuery.includes('2 year') || lowerQuery.includes('24 month')) {
+  } else if (lowerQuery.includes('24 month') || lowerQuery.includes('2 year') || lowerQuery.includes('24-month')) {
     periods = 24;
-  } else if (lowerQuery.includes('year') || lowerQuery.includes('12 month')) {
+  } else if (lowerQuery.includes('18 month') || lowerQuery.includes('1.5 year')) {
+    periods = 18;
+  } else if (lowerQuery.includes('12 month') || (lowerQuery.includes('year') && !lowerQuery.includes('2 year') && !lowerQuery.includes('3 year'))) {
     periods = 12;
+  } else if (lowerQuery.includes('9 month')) {
+    periods = 9;
   } else if (lowerQuery.includes('6 month')) {
     periods = 6;
   } else if (lowerQuery.includes('quarter') || lowerQuery.includes('3 month')) {
     periods = 3;
   } else if (lowerQuery.includes('forecast') || lowerQuery.includes('projection')) {
-    // If it's a forecast/projection request, default to 12 months
+    // If it's a forecast/projection request without specific timeframe, default to 12 months
     periods = 12;
   }
+  
+  // Debug logging
+  console.log(`Forecast period detected: ${periods} months for query: "${query}"`);
   
   // Calculate current revenue
   const currentRevenue = (largeCustomers * arpuLarge) + (smallCustomers * arpuSmall);
