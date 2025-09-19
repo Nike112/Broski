@@ -175,41 +175,26 @@ Respond now using the knowledge base:`;
 
     // Check if this is a forecast request that needs structured data
     const isForecastRequest = (
-      // Explicit forecast/projection requests
-      (lowerQuery.includes('forecast') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show') || lowerQuery.includes('next'))) ||
-      (lowerQuery.includes('projection') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show') || lowerQuery.includes('next'))) ||
-      (lowerQuery.includes('predict') && (lowerQuery.includes('generate') || lowerQuery.includes('create') || lowerQuery.includes('show'))) ||
+      // Explicit forecast/projection requests with action words
+      (lowerQuery.includes('generate') && (lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
+      (lowerQuery.includes('create') && (lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
+      (lowerQuery.includes('show') && (lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
       
-      // Specific time period requests
-      (lowerQuery.includes('month') && (lowerQuery.includes('6') || lowerQuery.includes('12') || lowerQuery.includes('18') || lowerQuery.includes('24'))) ||
-      (lowerQuery.includes('year') && (lowerQuery.includes('1') || lowerQuery.includes('2'))) ||
-      (lowerQuery.includes('quarter') && (lowerQuery.includes('3') || lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
+      // Specific time period forecasts
+      (lowerQuery.includes('6 month') && lowerQuery.includes('forecast')) ||
+      (lowerQuery.includes('12 month') && lowerQuery.includes('forecast')) ||
+      (lowerQuery.includes('quarterly forecast')) ||
+      (lowerQuery.includes('annual forecast')) ||
+      (lowerQuery.includes('month by month')) ||
       
-      // Scenario analysis requests
-      (lowerQuery.includes('what if') && (lowerQuery.includes('double') || lowerQuery.includes('reduce') || lowerQuery.includes('increase') || lowerQuery.includes('next'))) ||
-      (lowerQuery.includes('scenario') && (lowerQuery.includes('optimistic') || lowerQuery.includes('pessimistic') || lowerQuery.includes('realistic') || lowerQuery.includes('with'))) ||
-      (lowerQuery.includes('show scenario')) ||
+      // Scenario analysis with specific actions
+      (lowerQuery.includes('what if') && (lowerQuery.includes('double') || lowerQuery.includes('reduce') || lowerQuery.includes('increase'))) ||
+      (lowerQuery.includes('scenario') && (lowerQuery.includes('optimistic') || lowerQuery.includes('pessimistic') || lowerQuery.includes('realistic'))) ||
       
-      // Table and comparison requests
-      lowerQuery.includes('breakdown') ||
-      lowerQuery.includes('table') ||
-      lowerQuery.includes('compare') ||
-      lowerQuery.includes('vs') ||
-      lowerQuery.includes('versus') ||
-      lowerQuery.includes('analysis') ||
-      lowerQuery.includes('detailed') ||
-      
-      // Specific forecast types
-      lowerQuery.includes('quarterly forecast') ||
-      lowerQuery.includes('annual forecast') ||
-      lowerQuery.includes('month by month') ||
-      
-      // Time-based analysis
-      lowerQuery.includes('monthly') ||
-      lowerQuery.includes('quarterly') ||
-      lowerQuery.includes('yearly') ||
-      lowerQuery.includes('over time') ||
-      lowerQuery.includes('trend analysis')
+      // Table requests for forecast tab
+      (lowerQuery.includes('breakdown') && (lowerQuery.includes('monthly') || lowerQuery.includes('quarterly') || lowerQuery.includes('forecast'))) ||
+      (lowerQuery.includes('table') && (lowerQuery.includes('forecast') || lowerQuery.includes('projection'))) ||
+      (lowerQuery.includes('compare') && (lowerQuery.includes('month') || lowerQuery.includes('quarter') || lowerQuery.includes('year')))
     );
     
     if (isForecastRequest) {
