@@ -214,16 +214,17 @@ Use the knowledge base to provide accurate financial information. Be concise and
 
     // Check if this would generate a huge table (but don't auto-switch)
     const wouldGenerateTable = (
-      // Must have BOTH action word AND table keyword
-      (lowerQuery.includes('generate') && lowerQuery.includes('table')) ||
-      (lowerQuery.includes('create') && lowerQuery.includes('table')) ||
-      (lowerQuery.includes('show') && lowerQuery.includes('table')) ||
+      // Table requests
+      lowerQuery.includes('table') ||
+      lowerQuery.includes('projection table') ||
+      lowerQuery.includes('forecast table') ||
       
-      // Must have BOTH forecast/projection AND specific timeframe
-      (lowerQuery.includes('generate') && lowerQuery.includes('forecast') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month'))) ||
-      (lowerQuery.includes('create') && lowerQuery.includes('projection') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month'))) ||
+      // Projection/forecast with timeframes
+      (lowerQuery.includes('projection') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month'))) ||
+      (lowerQuery.includes('forecast') && (lowerQuery.includes('6 month') || lowerQuery.includes('12 month') || lowerQuery.includes('24 month'))) ||
       
-      // Must have BOTH breakdown AND time period
+      // Breakdown requests
+      lowerQuery.includes('breakdown') ||
       (lowerQuery.includes('monthly') && lowerQuery.includes('breakdown')) ||
       (lowerQuery.includes('quarterly') && lowerQuery.includes('breakdown'))
     );
@@ -233,9 +234,12 @@ Use the knowledge base to provide accurate financial information. Be concise and
       // Generate forecast data but don't auto-switch
       const forecastData = generateForecastData(query, inputs);
       
+      // Return simple message instead of full table in chat
+      const simpleMessage = "I've generated a detailed table for you. Click the button below to view it in the Forecast tab.";
+      
       return {
         responseType: 'answer',
-        explanation: text,
+        explanation: simpleMessage,
         forecast: forecastData,
         hasTable: true
       };
