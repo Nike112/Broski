@@ -235,5 +235,95 @@
       "description": "Running total of cash position over time",
       "keywords": ["cumulative cash", "cash position", "total cash flow"]
     }
+  },
+  "revenue_forecasting_methods": {
+    "customer_count_forecast": {
+      "name": "Customer Count Forecast",
+      "description": "A top-down method that forecasts revenue based on expected customer count and average revenue per customer.",
+      "variables": ["ExpectedCustomers", "AverageRevenuePerCustomer"],
+      "calculation": "ExpectedCustomers * AverageRevenuePerCustomer",
+      "citations": [1]
+    },
+    "sales_pipeline_analysis": {
+      "name": "Sales Pipeline Analysis",
+      "description": "A bottom-up method that forecasts revenue based on the deals in your sales pipeline.",
+      "variables": ["OpportunityValue", "WinProbability"],
+      "calculation": "SUM(OpportunityValue * WinProbability)",
+      "citations": [1, 2]
+    },
+    "historical_growth": {
+      "name": "Historical Growth",
+      "description": "A simple historical formula that uses a growth rate to forecast future revenue.",
+      "variables": ["PreviousPeriodRevenue", "GrowthRate"],
+      "calculation": "PreviousPeriodRevenue * (1 + GrowthRate)",
+      "citations": [1]
+    },
+    "linear_regression": {
+      "name": "Simple Trending (Linear Regression)",
+      "description": "Models a linear trend in data over time.",
+      "variables": ["m", "t", "b"],
+      "calculation": "m * t + b",
+      "citations": [3]
+    }
+  },
+  "customer_growth_metrics": {
+    "customer_growth_rate": {
+      "name": "Customer Growth Rate",
+      "description": "Measures the percentage change in customer count over a period.",
+      "variables": ["CurrentCustomers", "PreviousCustomers"],
+      "calculation": "((CurrentCustomers - PreviousCustomers) / PreviousCustomers) * 100",
+      "citations": [4]
+    },
+    "customer_acquisition_cost": {
+      "name": "Customer Acquisition Cost (CAC)",
+      "description": "Determines the total cost of acquiring a single new customer.",
+      "variables": ["TotalSalesAndMarketingSpend", "NumberOfNewCustomers"],
+      "calculation": "TotalSalesAndMarketingSpend / NumberOfNewCustomers",
+      "citations": [5, 6]
+    },
+    "churn_rate": {
+      "name": "Churn Rate",
+      "description": "Measures the percentage of customers who stop using a service.",
+      "variables": ["CustomersLost", "TotalCustomersAtBeginning"],
+      "calculation": "(CustomersLost / TotalCustomersAtBeginning) * 100",
+      "citations": [4]
+    },
+    "customer_lifetime_value": {
+      "name": "Customer Lifetime Value (LTV)",
+      "description": "Projects the total revenue from a single customer over their relationship.",
+      "variables": ["AverageRevenuePerAccount", "ChurnRate"],
+      "calculation": "AverageRevenuePerAccount / ChurnRate",
+      "citations": [4]
+    }
+  },
+  "accuracy_metrics": {
+    "mean_absolute_percentage_error": {
+      "name": "Mean Absolute Percentage Error (MAPE)",
+      "description": "Shows the typical miss as a percentage, which is easy to interpret.",
+      "variables": ["Actual", "Forecast", "n"],
+      "calculation": "(100 / n) * SUM(|Actual - Forecast| / Actual)",
+      "citations": [7]
+    },
+    "mean_absolute_error": {
+      "name": "Mean Absolute Error (MAE)",
+      "description": "Shows the typical miss in dollar value, which is easy to interpret.",
+      "variables": ["Actual", "Forecast", "n"],
+      "calculation": "(1 / n) * SUM(|Actual - Forecast|)",
+      "citations": [7]
+    },
+    "root_mean_squared_error": {
+      "name": "Root Mean Squared Error (RMSE)",
+      "description": "Penalizes larger misses more harshly, making it sensitive to outliers.",
+      "variables": ["Actual", "Forecast", "n"],
+      "calculation": "SQRT(SUM((Actual - Forecast)^2) / n)",
+      "citations": [7]
+    },
+    "bias": {
+      "name": "Bias",
+      "description": "Averages the difference between predicted and actual revenue to reveal a consistent over- or underestimation.",
+      "variables": ["Actual", "Forecast", "n"],
+      "calculation": "(1 / n) * SUM(Forecast - Actual)",
+      "citations": [7]
+    }
   }
 }
